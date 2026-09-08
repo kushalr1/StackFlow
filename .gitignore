@@ -1,0 +1,32 @@
+# macOS and editors
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+appsettings.Development.json
+
+# .NET output
+**/bin/
+**/obj/
+*.user
+*.suo
+TestResults/
+
+# Angular and Node.js output
+**/node_modules/
+**/dist/
+**/.angular/
+**/.cache/
+*.log
+
+# Test coverage
+coverage/
+coverage-*/
+
