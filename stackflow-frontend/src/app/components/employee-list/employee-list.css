@@ -48,6 +48,70 @@ h1 {
   background: #1d4ed8;
 }
 
+.filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 1rem;
+}
+
+.filter-field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.search-field {
+  flex: 1;
+}
+
+.filter-field label {
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.filter-field input,
+.filter-field select {
+  min-height: 42px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0.6rem 0.75rem;
+  color: #0f172a;
+  font: inherit;
+}
+
+.filter-field input:focus,
+.filter-field select:focus {
+  border-color: #2563eb;
+  outline: 3px solid rgb(37 99 235 / 15%);
+}
+
+.filter-button,
+.clear-button {
+  min-height: 42px;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filter-button {
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.clear-button {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+}
+
 .state-card,
 .table-card {
   border: 1px solid #e2e8f0;
@@ -190,5 +254,10 @@ tbody tr:last-child td {
 
   .primary-button {
     text-align: center;
+  }
+
+  .filters {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

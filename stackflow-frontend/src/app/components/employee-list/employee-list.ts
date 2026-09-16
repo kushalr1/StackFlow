@@ -16,6 +16,9 @@ export class EmployeeList implements OnInit {
   private readonly employeeService = inject(EmployeeService);
 
   protected readonly employees = signal<Employee[]>([]);
+  protected readonly departments = signal<string[]>([]);
+  protected readonly searchTerm = signal('');
+  protected readonly selectedDepartment = signal('');
   protected readonly isLoading = signal(true);
   protected readonly errorMessage = signal('');
   protected readonly deletingEmployeeId = signal<number | null>(null);
@@ -30,10 +33,20 @@ export class EmployeeList implements OnInit {
     this.errorMessage.set('');
 
     this.employeeService
-      .getEmployees()
+      .getEmployees(this.searchTerm(), this.selectedDepartment())
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
-        next: (employees) => this.employees.set(employees),
+        next: (employees) => {
+          this.employees.set(employees);
+
+          if (!this.searchTerm() && !this.selectedDepartment()) {
+            const departments = [
+              ...new Set(employees.map((employee) => employee.department)),
+            ].sort((first, second) => first.localeCompare(second));
+
+            this.departments.set(departments);
+          }
+        },
         error: (error: HttpErrorResponse) => {
           const message =
             error.status === 0
@@ -43,6 +56,26 @@ export class EmployeeList implements OnInit {
           this.errorMessage.set(message);
         },
       });
+  }
+
+  protected updateSearchTerm(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.searchTerm.set(input.value);
+  }
+
+  protected updateDepartment(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    this.selectedDepartment.set(select.value);
+  }
+
+  protected applyFilters(): void {
+    this.loadEmployees();
+  }
+
+  protected clearFilters(): void {
+    this.searchTerm.set('');
+    this.selectedDepartment.set('');
+    this.loadEmployees();
   }
 
   protected deleteEmployee(employee: Employee): void {
