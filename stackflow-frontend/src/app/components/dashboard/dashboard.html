@@ -1,4 +1,53 @@
-<section>
-  <h1>Dashboard</h1>
-  <p>Employee statistics will appear here.</p>
+<section class="dashboard-page">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">Organization overview</p>
+      <h1>Dashboard</h1>
+      <p>A quick summary of your StackFlow employee directory.</p>
+    </div>
+
+    <a class="primary-button" routerLink="/employees">View Employees</a>
+  </div>
+
+  @if (isLoading()) {
+    <div class="state-card" role="status">Loading dashboard...</div>
+  } @else if (errorMessage()) {
+    <div class="state-card error-state" role="alert">
+      <p>{{ errorMessage() }}</p>
+      <button type="button" (click)="loadDashboard()">Try Again</button>
+    </div>
+  } @else {
+    <div class="statistics-grid">
+      <article class="stat-card total-card">
+        <p>Total Employees</p>
+        <strong>{{ totalEmployees() }}</strong>
+        <span>Everyone in the directory</span>
+      </article>
+
+      <article class="stat-card active-card">
+        <p>Active Employees</p>
+        <strong>{{ activeEmployees() }}</strong>
+        <span>Currently active team members</span>
+      </article>
+
+      <article class="stat-card inactive-card">
+        <p>Inactive Employees</p>
+        <strong>{{ inactiveEmployees() }}</strong>
+        <span>Currently inactive team members</span>
+      </article>
+
+      <article class="stat-card department-card">
+        <p>Departments</p>
+        <strong>{{ departmentCount() }}</strong>
+        <span>Unique departments represented</span>
+      </article>
+    </div>
+
+    @if (totalEmployees() === 0) {
+      <div class="empty-message">
+        <p>Your directory is empty. Add an employee to populate the dashboard.</p>
+        <a class="primary-button" routerLink="/employees/add">Add Employee</a>
+      </div>
+    }
+  }
 </section>
