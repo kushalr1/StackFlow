@@ -20,27 +20,40 @@
     }
 
     @if (errorMessage()) {
-      <div class="feedback error" role="alert">{{ errorMessage() }}</div>
+      <div class="feedback error" role="alert">
+        <p>{{ errorMessage() }}</p>
+        @if (validationMessages().length > 0) {
+          <ul>
+            @for (message of validationMessages(); track message) {
+              <li>{{ message }}</li>
+            }
+          </ul>
+        }
+      </div>
     }
 
     <div class="form-grid">
       <div class="form-field full-width">
         <label for="name">Name</label>
-        <input id="name" type="text" formControlName="name" autocomplete="name" />
-        @if (employeeForm.controls.name.touched && employeeForm.controls.name.hasError('required')) {
+        <input id="name" type="text" maxlength="100" formControlName="name" autocomplete="name" />
+        @if (employeeForm.controls.name.touched && (employeeForm.controls.name.hasError('required') || employeeForm.controls.name.hasError('blank'))) {
           <small class="validation-error">Name is required.</small>
         } @else if (employeeForm.controls.name.touched && employeeForm.controls.name.hasError('minlength')) {
           <small class="validation-error">Name must be at least 2 characters.</small>
+        } @else if (employeeForm.controls.name.touched && employeeForm.controls.name.hasError('maxlength')) {
+          <small class="validation-error">Name cannot exceed 100 characters.</small>
         }
       </div>
 
       <div class="form-field">
         <label for="email">Email</label>
-        <input id="email" type="email" formControlName="email" autocomplete="email" />
+        <input id="email" type="email" maxlength="255" formControlName="email" autocomplete="email" />
         @if (employeeForm.controls.email.touched && employeeForm.controls.email.hasError('required')) {
           <small class="validation-error">Email is required.</small>
         } @else if (employeeForm.controls.email.touched && employeeForm.controls.email.hasError('email')) {
           <small class="validation-error">Enter a valid email address.</small>
+        } @else if (employeeForm.controls.email.touched && employeeForm.controls.email.hasError('maxlength')) {
+          <small class="validation-error">Email cannot exceed 255 characters.</small>
         }
       </div>
 
@@ -56,25 +69,33 @@
 
       <div class="form-field">
         <label for="department">Department</label>
-        <input id="department" type="text" formControlName="department" />
-        @if (employeeForm.controls.department.touched && employeeForm.controls.department.hasError('required')) {
+        <input id="department" type="text" maxlength="100" formControlName="department" />
+        @if (employeeForm.controls.department.touched && (employeeForm.controls.department.hasError('required') || employeeForm.controls.department.hasError('blank'))) {
           <small class="validation-error">Department is required.</small>
+        } @else if (employeeForm.controls.department.touched && employeeForm.controls.department.hasError('maxlength')) {
+          <small class="validation-error">Department cannot exceed 100 characters.</small>
         }
       </div>
 
       <div class="form-field">
         <label for="jobTitle">Job Title</label>
-        <input id="jobTitle" type="text" formControlName="jobTitle" />
-        @if (employeeForm.controls.jobTitle.touched && employeeForm.controls.jobTitle.hasError('required')) {
+        <input id="jobTitle" type="text" maxlength="100" formControlName="jobTitle" />
+        @if (employeeForm.controls.jobTitle.touched && (employeeForm.controls.jobTitle.hasError('required') || employeeForm.controls.jobTitle.hasError('blank'))) {
           <small class="validation-error">Job title is required.</small>
+        } @else if (employeeForm.controls.jobTitle.touched && employeeForm.controls.jobTitle.hasError('maxlength')) {
+          <small class="validation-error">Job title cannot exceed 100 characters.</small>
         }
       </div>
 
       <div class="form-field">
         <label for="salary">Salary</label>
-        <input id="salary" type="number" min="0.01" step="0.01" formControlName="salary" />
-        @if (employeeForm.controls.salary.touched && employeeForm.controls.salary.hasError('min')) {
+        <input id="salary" type="number" min="0.01" max="9999999999.99" step="0.01" formControlName="salary" />
+        @if (employeeForm.controls.salary.touched && employeeForm.controls.salary.hasError('required')) {
+          <small class="validation-error">Salary is required.</small>
+        } @else if (employeeForm.controls.salary.touched && employeeForm.controls.salary.hasError('min')) {
           <small class="validation-error">Salary must be greater than 0.</small>
+        } @else if (employeeForm.controls.salary.touched && employeeForm.controls.salary.hasError('max')) {
+          <small class="validation-error">Salary is too large.</small>
         }
       </div>
 

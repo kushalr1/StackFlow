@@ -1,10 +1,24 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize, Observable } from 'rxjs';
 import { EmployeeRequest } from '../../models/employee';
 import { EmployeeService } from '../../services/employee.service';
+
+function notBlank(control: AbstractControl): ValidationErrors | null {
+  const value = control.value;
+
+  return typeof value === 'string' && value.trim().length === 0
+    ? { blank: true }
+    : null;
+}
 
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
@@ -24,17 +38,24 @@ export class EmployeeForm implements OnInit {
   protected readonly isSubmitting = signal(false);
   protected readonly successMessage = signal('');
   protected readonly errorMessage = signal('');
+  protected readonly validationMessages = signal<string[]>([]);
   protected readonly pageTitle = computed(() =>
     this.isEditMode() ? 'Edit Employee' : 'Add Employee',
   );
 
   protected readonly employeeForm = this.formBuilder.nonNullable.group({
-    name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+    name: [
+      '',
+      [Validators.required, notBlank, Validators.minLength(2), Validators.maxLength(100)],
+    ],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
     phone: ['', [Validators.required, Validators.pattern(/^\d{10,15}$/)]],
-    department: ['', [Validators.required, Validators.maxLength(100)]],
-    jobTitle: ['', [Validators.required, Validators.maxLength(100)]],
-    salary: [0, [Validators.required, Validators.min(0.01)]],
+    department: ['', [Validators.required, notBlank, Validators.maxLength(100)]],
+    jobTitle: ['', [Validators.required, notBlank, Validators.maxLength(100)]],
+    salary: [
+      0,
+      [Validators.required, Validators.min(0.01), Validators.max(9999999999.99)],
+    ],
     dateOfJoining: ['', Validators.required],
     isActive: [true],
   });
@@ -62,6 +83,7 @@ export class EmployeeForm implements OnInit {
   protected submit(): void {
     this.successMessage.set('');
     this.errorMessage.set('');
+    this.validationMessages.set([]);
 
     if (this.employeeForm.invalid) {
       this.employeeForm.markAllAsTouched();
@@ -85,14 +107,18 @@ export class EmployeeForm implements OnInit {
           window.setTimeout(() => this.router.navigate(['/employees']), 800);
         },
         error: (error: HttpErrorResponse) => {
+          const validationMessages = this.getValidationMessages(error);
           const message =
             error.status === 0
               ? 'The API is unavailable. Confirm that the .NET backend is running.'
               : error.status === 400
                 ? 'Some employee information is invalid. Review the form and try again.'
+                : error.status === 404 && this.isEditMode()
+                  ? 'This employee no longer exists. Return to the employee list.'
                 : `The employee could not be ${this.isEditMode() ? 'updated' : 'created'}. Please try again.`;
 
           this.errorMessage.set(message);
+          this.validationMessages.set(validationMessages);
         },
       });
   }
@@ -129,5 +155,23 @@ export class EmployeeForm implements OnInit {
           this.employeeForm.disable();
         },
       });
+  }
+
+  private getValidationMessages(error: HttpErrorResponse): string[] {
+    if (error.status !== 400) {
+      return [];
+    }
+
+    const errors = error.error?.errors;
+
+    if (!errors || typeof errors !== 'object') {
+      return [];
+    }
+
+    return Object.values(errors).flatMap((messages) =>
+      Array.isArray(messages)
+        ? messages.filter((message): message is string => typeof message === 'string')
+        : [],
+    );
   }
 }
