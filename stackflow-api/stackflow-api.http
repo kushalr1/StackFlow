@@ -1,6 +1,63 @@
-@stackflow_api_HostAddress = http://localhost:0
+@host = http://localhost:5090
+@employeeId = 1
 
-GET {{stackflow_api_HostAddress}}/weatherforecast/
+### Get all employees
+GET {{host}}/api/employees
 Accept: application/json
 
 ###
+
+### Search employees
+GET {{host}}/api/employees?search=kushal
+Accept: application/json
+
+###
+
+### Filter employees by department
+GET {{host}}/api/employees?department=Engineering
+Accept: application/json
+
+###
+
+### Get one employee
+GET {{host}}/api/employees/{{employeeId}}
+Accept: application/json
+
+###
+
+### Create an employee
+POST {{host}}/api/employees
+Content-Type: application/json
+
+{
+  "name": "Kushal Sharma",
+  "email": "kushal@example.com",
+  "phone": "9876543210",
+  "department": "Engineering",
+  "jobTitle": "Software Developer",
+  "salary": 50000,
+  "dateOfJoining": "2026-09-16",
+  "isActive": true
+}
+
+###
+
+### Update an employee
+PUT {{host}}/api/employees/{{employeeId}}
+Content-Type: application/json
+
+{
+  "name": "Kushal Sharma",
+  "email": "kushal@example.com",
+  "phone": "9876543210",
+  "department": "Engineering",
+  "jobTitle": "Senior Software Developer",
+  "salary": 65000,
+  "dateOfJoining": "2026-09-16",
+  "isActive": true
+}
+
+###
+
+### Delete an employee
+DELETE {{host}}/api/employees/{{employeeId}}
