@@ -1,11 +1,20 @@
 <section class="form-page">
   <div class="page-heading">
     <p class="eyebrow">Team directory</p>
-    <h1>Add Employee</h1>
-    <p>Enter the employee's information. All fields except active status are required.</p>
+    <h1>{{ pageTitle() }}</h1>
+    <p>
+      {{
+        isEditMode()
+          ? 'Update the employee information below.'
+          : "Enter the employee's information. All fields except active status are required."
+      }}
+    </p>
   </div>
 
-  <form [formGroup]="employeeForm" (ngSubmit)="submit()" novalidate>
+  @if (isLoading()) {
+    <div class="loading-card" role="status">Loading employee...</div>
+  } @else {
+    <form [formGroup]="employeeForm" (ngSubmit)="submit()" novalidate>
     @if (successMessage()) {
       <div class="feedback success" role="status">{{ successMessage() }}</div>
     }
@@ -85,9 +94,14 @@
 
     <div class="form-actions">
       <a class="secondary-button" routerLink="/employees">Cancel</a>
-      <button class="primary-button" type="submit" [disabled]="isSubmitting()">
-        {{ isSubmitting() ? 'Saving...' : 'Save Employee' }}
+      <button
+        class="primary-button"
+        type="submit"
+        [disabled]="isSubmitting() || employeeForm.disabled"
+      >
+        {{ isSubmitting() ? 'Saving...' : isEditMode() ? 'Update Employee' : 'Save Employee' }}
       </button>
     </div>
-  </form>
+    </form>
+  }
 </section>
