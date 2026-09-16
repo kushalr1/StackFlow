@@ -1,1 +1,35 @@
-<router-outlet />
+<header class="app-header">
+  <div class="header-content">
+    <a class="brand" routerLink="/dashboard" aria-label="StackFlow dashboard">
+      <span class="brand-mark">SF</span>
+      <span>
+        <strong>StackFlow</strong>
+        <small>Employee Management</small>
+      </span>
+    </a>
+
+    <nav class="main-nav" aria-label="Primary navigation">
+      <a
+        routerLink="/dashboard"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
+        Dashboard
+      </a>
+      <a
+        routerLink="/employees"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
+        Employees
+      </a>
+      <a routerLink="/employees/add" routerLinkActive="active">
+        Add Employee
+      </a>
+    </nav>
+  </div>
+</header>
+
+<main class="page-content">
+  <router-outlet />
+</main>
