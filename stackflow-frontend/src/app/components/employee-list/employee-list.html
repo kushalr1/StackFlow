@@ -23,6 +23,10 @@
       <a class="primary-button" routerLink="/employees/add">Add First Employee</a>
     </div>
   } @else {
+    @if (deleteErrorMessage()) {
+      <div class="delete-error" role="alert">{{ deleteErrorMessage() }}</div>
+    }
+
     <div class="table-card">
       <div class="table-scroll">
         <table>
@@ -57,6 +61,18 @@
                   <div class="row-actions">
                     <a [routerLink]="['/employees', employee.id]">View</a>
                     <a [routerLink]="['/employees', employee.id, 'edit']">Edit</a>
+                    <button
+                      class="delete-button"
+                      type="button"
+                      [disabled]="deletingEmployeeId() === employee.id"
+                      (click)="deleteEmployee(employee)"
+                    >
+                      {{
+                        deletingEmployeeId() === employee.id
+                          ? 'Deleting...'
+                          : 'Delete'
+                      }}
+                    </button>
                   </div>
                 </td>
               </tr>

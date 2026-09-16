@@ -79,6 +79,14 @@ h1 {
   color: #b91c1c;
 }
 
+.delete-error {
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  padding: 0.75rem 1rem;
+  color: #b91c1c;
+}
+
 .table-scroll {
   overflow-x: auto;
 }
@@ -141,6 +149,25 @@ tbody tr:last-child td {
 
 .row-actions a:hover {
   text-decoration: underline;
+}
+
+.delete-button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #dc2626;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.delete-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.delete-button:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
 }
 
 .visually-hidden {

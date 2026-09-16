@@ -18,6 +18,8 @@ export class EmployeeList implements OnInit {
   protected readonly employees = signal<Employee[]>([]);
   protected readonly isLoading = signal(true);
   protected readonly errorMessage = signal('');
+  protected readonly deletingEmployeeId = signal<number | null>(null);
+  protected readonly deleteErrorMessage = signal('');
 
   ngOnInit(): void {
     this.loadEmployees();
@@ -39,6 +41,36 @@ export class EmployeeList implements OnInit {
               : 'Employees could not be loaded. Please try again.';
 
           this.errorMessage.set(message);
+        },
+      });
+  }
+
+  protected deleteEmployee(employee: Employee): void {
+    const confirmed = window.confirm(
+      `Delete ${employee.name}? This action cannot be undone.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.deleteErrorMessage.set('');
+    this.deletingEmployeeId.set(employee.id);
+
+    this.employeeService
+      .deleteEmployee(employee.id)
+      .pipe(finalize(() => this.deletingEmployeeId.set(null)))
+      .subscribe({
+        next: () => this.loadEmployees(),
+        error: (error: HttpErrorResponse) => {
+          const message =
+            error.status === 0
+              ? 'The API is unavailable. Confirm that the .NET backend is running.'
+              : error.status === 404
+                ? `${employee.name} was not found. Refresh the list and try again.`
+                : `${employee.name} could not be deleted. Please try again.`;
+
+          this.deleteErrorMessage.set(message);
         },
       });
   }
