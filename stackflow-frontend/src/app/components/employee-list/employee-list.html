@@ -1,4 +1,69 @@
-<section>
-  <h1>Employees</h1>
-  <p>The employee list will appear here.</p>
+<section class="employee-page">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">Team directory</p>
+      <h1>Employees</h1>
+      <p>View and manage everyone in your organization.</p>
+    </div>
+
+    <a class="primary-button" routerLink="/employees/add">Add Employee</a>
+  </div>
+
+  @if (isLoading()) {
+    <div class="state-card" role="status">Loading employees...</div>
+  } @else if (errorMessage()) {
+    <div class="state-card error-state" role="alert">
+      <p>{{ errorMessage() }}</p>
+      <button type="button" (click)="loadEmployees()">Try Again</button>
+    </div>
+  } @else if (employees().length === 0) {
+    <div class="state-card empty-state">
+      <h2>No employees yet</h2>
+      <p>Add your first employee to start building the StackFlow directory.</p>
+      <a class="primary-button" routerLink="/employees/add">Add First Employee</a>
+    </div>
+  } @else {
+    <div class="table-card">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Department</th>
+              <th>Job Title</th>
+              <th>Salary</th>
+              <th>Status</th>
+              <th><span class="visually-hidden">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (employee of employees(); track employee.id) {
+              <tr>
+                <td class="employee-name">{{ employee.name }}</td>
+                <td>{{ employee.email }}</td>
+                <td>{{ employee.department }}</td>
+                <td>{{ employee.jobTitle }}</td>
+                <td>{{ employee.salary | number: '1.2-2' }}</td>
+                <td>
+                  <span
+                    class="status-badge"
+                    [class.inactive]="!employee.isActive"
+                  >
+                    {{ employee.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <a [routerLink]="['/employees', employee.id]">View</a>
+                    <a [routerLink]="['/employees', employee.id, 'edit']">Edit</a>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
 </section>
