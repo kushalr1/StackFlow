@@ -1,4 +1,73 @@
-<section>
-  <h1>Employee Details</h1>
-  <p>The selected employee's information will appear here.</p>
+<section class="details-page">
+  @if (isLoading()) {
+    <div class="state-card" role="status">Loading employee...</div>
+  } @else if (errorMessage()) {
+    <div class="state-card error-state" role="alert">
+      <h1>Employee unavailable</h1>
+      <p>{{ errorMessage() }}</p>
+      <a class="secondary-button" routerLink="/employees">Back to Employees</a>
+    </div>
+  } @else if (employee(); as employee) {
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">Employee profile</p>
+        <h1>{{ employee.name }}</h1>
+        <p>{{ employee.jobTitle }} · {{ employee.department }}</p>
+      </div>
+
+      <div class="heading-actions">
+        <a class="secondary-button" routerLink="/employees">Back</a>
+        <a class="primary-button" [routerLink]="['/employees', employee.id, 'edit']">
+          Edit Employee
+        </a>
+      </div>
+    </div>
+
+    <article class="details-card">
+      <div class="profile-summary">
+        <span class="avatar" aria-hidden="true">{{ employee.name.charAt(0).toUpperCase() }}</span>
+        <div>
+          <h2>{{ employee.name }}</h2>
+          <span class="status-badge" [class.inactive]="!employee.isActive">
+            {{ employee.isActive ? 'Active' : 'Inactive' }}
+          </span>
+        </div>
+      </div>
+
+      <dl class="details-grid">
+        <div>
+          <dt>Email</dt>
+          <dd><a [href]="'mailto:' + employee.email">{{ employee.email }}</a></dd>
+        </div>
+        <div>
+          <dt>Phone</dt>
+          <dd><a [href]="'tel:' + employee.phone">{{ employee.phone }}</a></dd>
+        </div>
+        <div>
+          <dt>Department</dt>
+          <dd>{{ employee.department }}</dd>
+        </div>
+        <div>
+          <dt>Job Title</dt>
+          <dd>{{ employee.jobTitle }}</dd>
+        </div>
+        <div>
+          <dt>Salary</dt>
+          <dd>{{ employee.salary | number: '1.2-2' }}</dd>
+        </div>
+        <div>
+          <dt>Date of Joining</dt>
+          <dd>{{ employee.dateOfJoining | date: 'longDate' }}</dd>
+        </div>
+        <div>
+          <dt>Employee ID</dt>
+          <dd>#{{ employee.id }}</dd>
+        </div>
+        <div>
+          <dt>Status</dt>
+          <dd>{{ employee.isActive ? 'Active employee' : 'Inactive employee' }}</dd>
+        </div>
+      </dl>
+    </article>
+  }
 </section>
