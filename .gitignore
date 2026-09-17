@@ -42,3 +42,6 @@ coverage-*/
 *.db
 *.db-shm
 *.db-wal
+
+# Private documentation
+docs/mentor.md
