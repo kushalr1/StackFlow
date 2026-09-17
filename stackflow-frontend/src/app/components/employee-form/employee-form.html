@@ -42,6 +42,8 @@
           <small class="validation-error">Name must be at least 2 characters.</small>
         } @else if (employeeForm.controls.name.touched && employeeForm.controls.name.hasError('maxlength')) {
           <small class="validation-error">Name cannot exceed 100 characters.</small>
+        } @else if (employeeForm.controls.name.touched && employeeForm.controls.name.hasError('employeeName')) {
+          <small class="validation-error">Name can contain only letters and spaces.</small>
         }
       </div>
 

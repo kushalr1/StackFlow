@@ -20,6 +20,18 @@ function notBlank(control: AbstractControl): ValidationErrors | null {
     : null;
 }
 
+function employeeName(control: AbstractControl): ValidationErrors | null {
+  const value = control.value;
+
+  if (typeof value !== 'string' || value.length === 0) {
+    return null;
+  }
+
+  return /^[A-Za-z]+(?: [A-Za-z]+)*$/.test(value.trim())
+    ? null
+    : { employeeName: true };
+}
+
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
   selector: 'app-employee-form',
@@ -46,7 +58,13 @@ export class EmployeeForm implements OnInit {
   protected readonly employeeForm = this.formBuilder.nonNullable.group({
     name: [
       '',
-      [Validators.required, notBlank, Validators.minLength(2), Validators.maxLength(100)],
+      [
+        Validators.required,
+        notBlank,
+        employeeName,
+        Validators.minLength(2),
+        Validators.maxLength(100),
+      ],
     ],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
     phone: ['', [Validators.required, Validators.pattern(/^\d{10,15}$/)]],
@@ -90,7 +108,11 @@ export class EmployeeForm implements OnInit {
       return;
     }
 
-    const employee: EmployeeRequest = this.employeeForm.getRawValue();
+    const formValue = this.employeeForm.getRawValue();
+    const employee: EmployeeRequest = {
+      ...formValue,
+      name: formValue.name.trim(),
+    };
 
     this.isSubmitting.set(true);
     const request: Observable<unknown> =
