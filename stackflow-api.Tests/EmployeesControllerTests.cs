@@ -13,7 +13,7 @@ public class EmployeesControllerTests
         // Arrange
         var service = new FakeEmployeeService();
         var controller = new EmployeesController(service);
-        var request = CreateRequest("Aarav Mehta", "Engineering");
+        var request = CreateRequest("Aarav Mehta", 1);
 
         // Act
         var result = await controller.Create(request);
@@ -31,7 +31,8 @@ public class EmployeesControllerTests
     {
         // Arrange
         var service = new FakeEmployeeService();
-        var existing = await service.CreateAsync(CreateRequest("Aarav Mehta", "Engineering"));
+        var existing = await service.CreateAsync(CreateRequest("Aarav Mehta", 1));
+        Assert.NotNull(existing);
         var controller = new EmployeesController(service);
 
         // Act
@@ -61,9 +62,10 @@ public class EmployeesControllerTests
     {
         // Arrange
         var service = new FakeEmployeeService();
-        var existing = await service.CreateAsync(CreateRequest("Aarav Mehta", "Engineering"));
+        var existing = await service.CreateAsync(CreateRequest("Aarav Mehta", 1));
+        Assert.NotNull(existing);
         var controller = new EmployeesController(service);
-        var update = UpdateRequest("Aarav Mehta", "Product");
+        var update = UpdateRequest("Aarav Mehta", 2);
 
         // Act
         var result = await controller.Update(existing.Id, update);
@@ -71,7 +73,7 @@ public class EmployeesControllerTests
         // Assert
         Assert.IsType<NoContentResult>(result);
         var updated = await service.GetByIdAsync(existing.Id);
-        Assert.Equal("Product", updated?.Department);
+        Assert.Equal(2, updated?.DepartmentId);
     }
 
     [Fact]
@@ -79,7 +81,8 @@ public class EmployeesControllerTests
     {
         // Arrange
         var service = new FakeEmployeeService();
-        var existing = await service.CreateAsync(CreateRequest("Aarav Mehta", "Engineering"));
+        var existing = await service.CreateAsync(CreateRequest("Aarav Mehta", 1));
+        Assert.NotNull(existing);
         var controller = new EmployeesController(service);
 
         // Act
@@ -108,8 +111,8 @@ public class EmployeesControllerTests
     {
         // Arrange
         var service = new FakeEmployeeService();
-        await service.CreateAsync(CreateRequest("Aarav Mehta", "Engineering"));
-        await service.CreateAsync(CreateRequest("Maya Patel", "Human Resources"));
+        await service.CreateAsync(CreateRequest("Aarav Mehta", 1));
+        await service.CreateAsync(CreateRequest("Maya Patel", 2));
         var controller = new EmployeesController(service);
 
         // Act
@@ -127,12 +130,12 @@ public class EmployeesControllerTests
     {
         // Arrange
         var service = new FakeEmployeeService();
-        await service.CreateAsync(CreateRequest("Aarav Mehta", "Engineering"));
-        await service.CreateAsync(CreateRequest("Maya Patel", "Human Resources"));
+        await service.CreateAsync(CreateRequest("Aarav Mehta", 1));
+        await service.CreateAsync(CreateRequest("Maya Patel", 2));
         var controller = new EmployeesController(service);
 
         // Act
-        var result = await controller.GetAll(null, "engineering");
+        var result = await controller.GetAll(null, 1);
 
         // Assert
         var ok = Assert.IsType<OkObjectResult>(result.Result);
@@ -141,14 +144,14 @@ public class EmployeesControllerTests
         Assert.Equal("Engineering", employee.Department);
     }
 
-    private static CreateEmployeeDto CreateRequest(string name, string department)
+    private static CreateEmployeeDto CreateRequest(string name, int departmentId)
     {
         return new CreateEmployeeDto
         {
             Name = name,
             Email = $"{name.Replace(" ", ".").ToLowerInvariant()}@example.com",
             Phone = "9876543210",
-            Department = department,
+            DepartmentId = departmentId,
             JobTitle = "Developer",
             Salary = 75000,
             DateOfJoining = new DateOnly(2026, 1, 15),
@@ -156,14 +159,14 @@ public class EmployeesControllerTests
         };
     }
 
-    private static UpdateEmployeeDto UpdateRequest(string name, string department)
+    private static UpdateEmployeeDto UpdateRequest(string name, int departmentId)
     {
         return new UpdateEmployeeDto
         {
             Name = name,
             Email = "aarav.mehta@example.com",
             Phone = "9876543210",
-            Department = department,
+            DepartmentId = departmentId,
             JobTitle = "Senior Developer",
             Salary = 90000,
             DateOfJoining = new DateOnly(2026, 1, 15),
@@ -178,7 +181,7 @@ public class EmployeesControllerTests
 
         public Task<IReadOnlyList<EmployeeDto>> GetAllAsync(
             string? search,
-            string? department)
+            int? departmentId)
         {
             IEnumerable<EmployeeDto> result = employees;
 
@@ -190,10 +193,10 @@ public class EmployeesControllerTests
                     employee.JobTitle.Contains(search, StringComparison.OrdinalIgnoreCase));
             }
 
-            if (!string.IsNullOrWhiteSpace(department))
+            if (departmentId.HasValue)
             {
                 result = result.Where(employee =>
-                    employee.Department.Equals(department, StringComparison.OrdinalIgnoreCase));
+                    employee.DepartmentId == departmentId.Value);
             }
 
             return Task.FromResult<IReadOnlyList<EmployeeDto>>(result.ToList());
@@ -204,7 +207,7 @@ public class EmployeesControllerTests
             return Task.FromResult(employees.FirstOrDefault(employee => employee.Id == id));
         }
 
-        public Task<EmployeeDto> CreateAsync(CreateEmployeeDto employeeDto)
+        public Task<EmployeeDto?> CreateAsync(CreateEmployeeDto employeeDto)
         {
             var employee = new EmployeeDto
             {
@@ -212,7 +215,8 @@ public class EmployeesControllerTests
                 Name = employeeDto.Name,
                 Email = employeeDto.Email,
                 Phone = employeeDto.Phone,
-                Department = employeeDto.Department,
+                DepartmentId = employeeDto.DepartmentId,
+                Department = GetDepartmentName(employeeDto.DepartmentId),
                 JobTitle = employeeDto.JobTitle,
                 Salary = employeeDto.Salary,
                 DateOfJoining = employeeDto.DateOfJoining!.Value,
@@ -220,28 +224,29 @@ public class EmployeesControllerTests
             };
 
             employees.Add(employee);
-            return Task.FromResult(employee);
+            return Task.FromResult<EmployeeDto?>(employee);
         }
 
-        public Task<bool> UpdateAsync(int id, UpdateEmployeeDto employeeDto)
+        public Task<EmployeeUpdateResult> UpdateAsync(int id, UpdateEmployeeDto employeeDto)
         {
             var employee = employees.FirstOrDefault(employee => employee.Id == id);
 
             if (employee is null)
             {
-                return Task.FromResult(false);
+                return Task.FromResult(EmployeeUpdateResult.EmployeeNotFound);
             }
 
             employee.Name = employeeDto.Name;
             employee.Email = employeeDto.Email;
             employee.Phone = employeeDto.Phone;
-            employee.Department = employeeDto.Department;
+            employee.DepartmentId = employeeDto.DepartmentId;
+            employee.Department = GetDepartmentName(employeeDto.DepartmentId);
             employee.JobTitle = employeeDto.JobTitle;
             employee.Salary = employeeDto.Salary;
             employee.DateOfJoining = employeeDto.DateOfJoining!.Value;
             employee.IsActive = employeeDto.IsActive;
 
-            return Task.FromResult(true);
+            return Task.FromResult(EmployeeUpdateResult.Updated);
         }
 
         public Task<bool> DeleteAsync(int id)
@@ -255,6 +260,11 @@ public class EmployeesControllerTests
 
             employees.Remove(employee);
             return Task.FromResult(true);
+        }
+
+        private static string GetDepartmentName(int departmentId)
+        {
+            return departmentId == 1 ? "Engineering" : "Human Resources";
         }
     }
 }

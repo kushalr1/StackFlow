@@ -4,6 +4,8 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { Employee } from '../../models/employee';
+import { Department } from '../../models/department';
+import { DepartmentService } from '../../services/department.service';
 import { EmployeeService } from '../../services/employee.service';
 
 @Component({
@@ -14,9 +16,10 @@ import { EmployeeService } from '../../services/employee.service';
 })
 export class EmployeeList implements OnInit {
   private readonly employeeService = inject(EmployeeService);
+  private readonly departmentService = inject(DepartmentService);
 
   protected readonly employees = signal<Employee[]>([]);
-  protected readonly departments = signal<string[]>([]);
+  protected readonly departments = signal<Department[]>([]);
   protected readonly searchTerm = signal('');
   protected readonly selectedDepartment = signal('');
   protected readonly isLoading = signal(true);
@@ -25,6 +28,9 @@ export class EmployeeList implements OnInit {
   protected readonly deleteErrorMessage = signal('');
 
   ngOnInit(): void {
+    this.departmentService.getDepartments().subscribe({
+      next: (departments) => this.departments.set(departments),
+    });
     this.loadEmployees();
   }
 
@@ -33,20 +39,13 @@ export class EmployeeList implements OnInit {
     this.errorMessage.set('');
 
     this.employeeService
-      .getEmployees(this.searchTerm(), this.selectedDepartment())
+      .getEmployees(
+        this.searchTerm(),
+        this.selectedDepartment() ? Number(this.selectedDepartment()) : undefined,
+      )
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
-        next: (employees) => {
-          this.employees.set(employees);
-
-          if (!this.searchTerm() && !this.selectedDepartment()) {
-            const departments = [
-              ...new Set(employees.map((employee) => employee.department)),
-            ].sort((first, second) => first.localeCompare(second));
-
-            this.departments.set(departments);
-          }
-        },
+        next: (employees) => this.employees.set(employees),
         error: (error: HttpErrorResponse) => {
           const message =
             error.status === 0

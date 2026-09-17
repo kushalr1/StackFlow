@@ -3,6 +3,7 @@ export interface Employee {
   name: string;
   email: string;
   phone: string;
+  departmentId: number;
   department: string;
   jobTitle: string;
   salary: number;
@@ -10,4 +11,4 @@ export interface Employee {
   isActive: boolean;
 }
 
-export type EmployeeRequest = Omit<Employee, 'id'>;
+export type EmployeeRequest = Omit<Employee, 'id' | 'department'>;

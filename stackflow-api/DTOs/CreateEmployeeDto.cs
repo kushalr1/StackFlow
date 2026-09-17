@@ -20,9 +20,8 @@ public class CreateEmployeeDto
     [RegularExpression(@"^\d{10,15}$", ErrorMessage = "Phone must contain 10 to 15 digits.")]
     public string Phone { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Department is required.")]
-    [MaxLength(100, ErrorMessage = "Department cannot exceed 100 characters.")]
-    public string Department { get; set; } = string.Empty;
+    [Range(1, int.MaxValue, ErrorMessage = "Department is required.")]
+    public int DepartmentId { get; set; }
 
     [Required(ErrorMessage = "Job title is required.")]
     [MaxLength(100, ErrorMessage = "Job title cannot exceed 100 characters.")]

@@ -14,7 +14,7 @@ Accept: application/json
 ###
 
 ### Filter employees by department
-GET {{host}}/api/employees?department=Engineering
+GET {{host}}/api/employees?departmentId=1
 Accept: application/json
 
 ###
@@ -33,7 +33,7 @@ Content-Type: application/json
   "name": "Kushal Sharma",
   "email": "kushal@example.com",
   "phone": "9876543210",
-  "department": "Engineering",
+  "departmentId": 1,
   "jobTitle": "Software Developer",
   "salary": 50000,
   "dateOfJoining": "2026-09-16",
@@ -50,7 +50,7 @@ Content-Type: application/json
   "name": "Kushal Sharma",
   "email": "kushal@example.com",
   "phone": "9876543210",
-  "department": "Engineering",
+  "departmentId": 1,
   "jobTitle": "Senior Software Developer",
   "salary": 65000,
   "dateOfJoining": "2026-09-16",
@@ -61,3 +61,20 @@ Content-Type: application/json
 
 ### Delete an employee
 DELETE {{host}}/api/employees/{{employeeId}}
+
+###
+
+### Get all departments
+GET {{host}}/api/departments
+Accept: application/json
+
+###
+
+### Create a department
+POST {{host}}/api/departments
+Content-Type: application/json
+
+{
+  "name": "Quality Assurance",
+  "description": "Maintains product quality"
+}

@@ -11,9 +11,9 @@ public class EmployeesController(IEmployeeService employeeService) : ControllerB
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<EmployeeDto>>> GetAll(
         [FromQuery] string? search,
-        [FromQuery] string? department)
+        [FromQuery] int? departmentId)
     {
-        var employees = await employeeService.GetAllAsync(search, department);
+        var employees = await employeeService.GetAllAsync(search, departmentId);
         return Ok(employees);
     }
 
@@ -41,6 +41,11 @@ public class EmployeesController(IEmployeeService employeeService) : ControllerB
     {
         var employee = await employeeService.CreateAsync(employeeDto);
 
+        if (employee is null)
+        {
+            return BadRequest(new { message = "The selected department does not exist." });
+        }
+
         return CreatedAtAction(
             nameof(GetById),
             new { id = employee.Id },
@@ -57,11 +62,16 @@ public class EmployeesController(IEmployeeService employeeService) : ControllerB
             return BadRequest(new { message = "Employee ID must be greater than 0." });
         }
 
-        var wasUpdated = await employeeService.UpdateAsync(id, employeeDto);
+        var result = await employeeService.UpdateAsync(id, employeeDto);
 
-        if (!wasUpdated)
+        if (result == EmployeeUpdateResult.EmployeeNotFound)
         {
             return NotFound(new { message = $"Employee with ID {id} was not found." });
+        }
+
+        if (result == EmployeeUpdateResult.DepartmentNotFound)
+        {
+            return BadRequest(new { message = "The selected department does not exist." });
         }
 
         return NoContent();

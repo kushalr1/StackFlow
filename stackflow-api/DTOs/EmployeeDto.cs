@@ -10,6 +10,8 @@ public class EmployeeDto
 
     public string Phone { get; set; } = string.Empty;
 
+    public int DepartmentId { get; set; }
+
     public string Department { get; set; } = string.Empty;
 
     public string JobTitle { get; set; } = string.Empty;

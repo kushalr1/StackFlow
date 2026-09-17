@@ -28,6 +28,6 @@ describe('App', () => {
     fixture.detectChanges();
     const links = fixture.nativeElement.querySelectorAll('nav a');
 
-    expect(links).toHaveLength(3);
+    expect(links).toHaveLength(4);
   });
 });

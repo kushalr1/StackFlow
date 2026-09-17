@@ -34,8 +34,15 @@ describe('EmployeeList', () => {
   it('should request employees when the component initializes', () => {
     fixture.detectChanges();
 
-    const request = httpTesting.expectOne('http://localhost:5090/api/employees');
-    expect(request.request.method).toBe('GET');
-    request.flush([]);
+    const departmentRequest = httpTesting.expectOne(
+      'http://localhost:5090/api/departments',
+    );
+    const employeeRequest = httpTesting.expectOne(
+      'http://localhost:5090/api/employees',
+    );
+    expect(departmentRequest.request.method).toBe('GET');
+    expect(employeeRequest.request.method).toBe('GET');
+    departmentRequest.flush([]);
+    employeeRequest.flush([]);
   });
 });

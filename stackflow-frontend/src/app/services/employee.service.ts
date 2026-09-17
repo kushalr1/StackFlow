@@ -10,15 +10,15 @@ export class EmployeeService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = 'http://localhost:5090/api/employees';
 
-  getEmployees(search?: string, department?: string): Observable<Employee[]> {
+  getEmployees(search?: string, departmentId?: number): Observable<Employee[]> {
     let params = new HttpParams();
 
     if (search?.trim()) {
       params = params.set('search', search.trim());
     }
 
-    if (department?.trim()) {
-      params = params.set('department', department.trim());
+    if (departmentId) {
+      params = params.set('departmentId', departmentId);
     }
 
     return this.http.get<Employee[]>(this.apiUrl, { params });

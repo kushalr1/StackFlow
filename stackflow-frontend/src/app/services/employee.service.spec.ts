@@ -13,13 +13,13 @@ describe('EmployeeService', () => {
     name: 'Aarav Mehta',
     email: 'aarav.mehta@example.com',
     phone: '9876543210',
-    department: 'Engineering',
+    departmentId: 1,
     jobTitle: 'Developer',
     salary: 75000,
     dateOfJoining: '2026-01-15',
     isActive: true,
   };
-  const employee: Employee = { id: 1, ...employeeRequest };
+  const employee: Employee = { id: 1, department: 'Engineering', ...employeeRequest };
 
   let service: EmployeeService;
   let httpTesting: HttpTestingController;

@@ -32,6 +32,10 @@
       </div>
     }
 
+    @if (departmentError()) {
+      <div class="feedback error" role="alert">{{ departmentError() }}</div>
+    }
+
     <div class="form-grid">
       <div class="form-field full-width">
         <label for="name">Name</label>
@@ -71,11 +75,14 @@
 
       <div class="form-field">
         <label for="department">Department</label>
-        <input id="department" type="text" maxlength="100" formControlName="department" />
-        @if (employeeForm.controls.department.touched && (employeeForm.controls.department.hasError('required') || employeeForm.controls.department.hasError('blank'))) {
+        <select id="department" formControlName="departmentId">
+          <option [ngValue]="0">Select a department</option>
+          @for (department of departments(); track department.id) {
+            <option [ngValue]="department.id">{{ department.name }}</option>
+          }
+        </select>
+        @if (employeeForm.controls.departmentId.touched && employeeForm.controls.departmentId.hasError('min')) {
           <small class="validation-error">Department is required.</small>
-        } @else if (employeeForm.controls.department.touched && employeeForm.controls.department.hasError('maxlength')) {
-          <small class="validation-error">Department cannot exceed 100 characters.</small>
         }
       </div>
 

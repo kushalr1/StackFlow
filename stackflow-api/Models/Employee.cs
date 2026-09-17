@@ -10,7 +10,9 @@ public class Employee
 
     public string Phone { get; set; } = string.Empty;
 
-    public string Department { get; set; } = string.Empty;
+    public int DepartmentId { get; set; }
+
+    public Department Department { get; set; } = null!;
 
     public string JobTitle { get; set; } = string.Empty;
 

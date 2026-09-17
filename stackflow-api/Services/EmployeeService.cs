@@ -9,7 +9,7 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
 {
     public async Task<IReadOnlyList<EmployeeDto>> GetAllAsync(
         string? search,
-        string? department)
+        int? departmentId)
     {
         var query = dbContext.Employees
             .AsNoTracking()
@@ -25,12 +25,9 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
                 EF.Functions.ILike(employee.JobTitle, searchTerm));
         }
 
-        if (!string.IsNullOrWhiteSpace(department))
+        if (departmentId.HasValue)
         {
-            var departmentName = department.Trim();
-
-            query = query.Where(employee =>
-                EF.Functions.ILike(employee.Department, departmentName));
+            query = query.Where(employee => employee.DepartmentId == departmentId.Value);
         }
 
         return await query
@@ -48,14 +45,22 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
             .FirstOrDefaultAsync();
     }
 
-    public async Task<EmployeeDto> CreateAsync(CreateEmployeeDto employeeDto)
+    public async Task<EmployeeDto?> CreateAsync(CreateEmployeeDto employeeDto)
     {
+        var department = await dbContext.Departments.FindAsync(employeeDto.DepartmentId);
+
+        if (department is null)
+        {
+            return null;
+        }
+
         var employee = new Employee
         {
             Name = employeeDto.Name.Trim(),
             Email = employeeDto.Email.Trim(),
             Phone = employeeDto.Phone.Trim(),
-            Department = employeeDto.Department.Trim(),
+            DepartmentId = department.Id,
+            Department = department,
             JobTitle = employeeDto.JobTitle.Trim(),
             Salary = employeeDto.Salary,
             DateOfJoining = GetRequiredJoiningDate(employeeDto.DateOfJoining),
@@ -68,26 +73,36 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
         return ToDto(employee);
     }
 
-    public async Task<bool> UpdateAsync(int id, UpdateEmployeeDto employeeDto)
+    public async Task<EmployeeUpdateResult> UpdateAsync(
+        int id,
+        UpdateEmployeeDto employeeDto)
     {
         var employee = await dbContext.Employees.FindAsync(id);
 
         if (employee is null)
         {
-            return false;
+            return EmployeeUpdateResult.EmployeeNotFound;
+        }
+
+        var department = await dbContext.Departments.FindAsync(employeeDto.DepartmentId);
+
+        if (department is null)
+        {
+            return EmployeeUpdateResult.DepartmentNotFound;
         }
 
         employee.Name = employeeDto.Name.Trim();
         employee.Email = employeeDto.Email.Trim();
         employee.Phone = employeeDto.Phone.Trim();
-        employee.Department = employeeDto.Department.Trim();
+        employee.DepartmentId = department.Id;
+        employee.Department = department;
         employee.JobTitle = employeeDto.JobTitle.Trim();
         employee.Salary = employeeDto.Salary;
         employee.DateOfJoining = GetRequiredJoiningDate(employeeDto.DateOfJoining);
         employee.IsActive = employeeDto.IsActive;
 
         await dbContext.SaveChangesAsync();
-        return true;
+        return EmployeeUpdateResult.Updated;
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -118,7 +133,8 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
             Name = employee.Name,
             Email = employee.Email,
             Phone = employee.Phone,
-            Department = employee.Department,
+            DepartmentId = employee.DepartmentId,
+            Department = employee.Department.Name,
             JobTitle = employee.JobTitle,
             Salary = employee.Salary,
             DateOfJoining = employee.DateOfJoining,

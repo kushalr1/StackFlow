@@ -10,6 +10,8 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize, Observable } from 'rxjs';
 import { EmployeeRequest } from '../../models/employee';
+import { Department } from '../../models/department';
+import { DepartmentService } from '../../services/department.service';
 import { EmployeeService } from '../../services/employee.service';
 
 function notBlank(control: AbstractControl): ValidationErrors | null {
@@ -41,6 +43,7 @@ function employeeName(control: AbstractControl): ValidationErrors | null {
 export class EmployeeForm implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly employeeService = inject(EmployeeService);
+  private readonly departmentService = inject(DepartmentService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private employeeId: number | null = null;
@@ -51,6 +54,8 @@ export class EmployeeForm implements OnInit {
   protected readonly successMessage = signal('');
   protected readonly errorMessage = signal('');
   protected readonly validationMessages = signal<string[]>([]);
+  protected readonly departments = signal<Department[]>([]);
+  protected readonly departmentError = signal('');
   protected readonly pageTitle = computed(() =>
     this.isEditMode() ? 'Edit Employee' : 'Add Employee',
   );
@@ -68,7 +73,7 @@ export class EmployeeForm implements OnInit {
     ],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
     phone: ['', [Validators.required, Validators.pattern(/^\d{10,15}$/)]],
-    department: ['', [Validators.required, notBlank, Validators.maxLength(100)]],
+    departmentId: [0, Validators.min(1)],
     jobTitle: ['', [Validators.required, notBlank, Validators.maxLength(100)]],
     salary: [
       0,
@@ -79,6 +84,7 @@ export class EmployeeForm implements OnInit {
   });
 
   ngOnInit(): void {
+    this.loadDepartments();
     const idParameter = this.route.snapshot.paramMap.get('id');
 
     if (idParameter === null) {
@@ -158,7 +164,7 @@ export class EmployeeForm implements OnInit {
             name: employee.name,
             email: employee.email,
             phone: employee.phone,
-            department: employee.department,
+            departmentId: employee.departmentId,
             jobTitle: employee.jobTitle,
             salary: employee.salary,
             dateOfJoining: employee.dateOfJoining,
@@ -177,6 +183,16 @@ export class EmployeeForm implements OnInit {
           this.employeeForm.disable();
         },
       });
+  }
+
+  private loadDepartments(): void {
+    this.departmentService.getDepartments().subscribe({
+      next: (departments) => this.departments.set(departments),
+      error: () =>
+        this.departmentError.set(
+          'Departments could not be loaded. Add or refresh departments before saving.',
+        ),
+    });
   }
 
   private getValidationMessages(error: HttpErrorResponse): string[] {
