@@ -21,4 +21,10 @@ public class Employee
     public DateOnly DateOfJoining { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    public ICollection<Attendance> AttendanceRecords { get; set; } = [];
+
+    public ICollection<LeaveRequest> LeaveRequests { get; set; } = [];
+
+    public ICollection<EmployeeProject> EmployeeProjects { get; set; } = [];
 }

@@ -1,0 +1,31 @@
+<section class="project-page">
+  <div class="page-heading"><p class="eyebrow">Team delivery</p><h1>Projects</h1><p>Create projects and organize employee assignments.</p></div>
+  @if (errorMessage()) { <div class="feedback error">{{ errorMessage() }}</div> }
+  @if (successMessage()) { <div class="feedback success">{{ successMessage() }}</div> }
+  <form class="project-form" [formGroup]="projectForm" (ngSubmit)="saveProject()">
+    <h2>{{ editingId() === null ? 'Create Project' : 'Edit Project' }}</h2>
+    <div class="form-grid">
+      <div><label>Name</label><input type="text" formControlName="name" maxlength="100" />
+        @if (projectForm.controls.name.touched && projectForm.controls.name.invalid) { <small>Enter at least 2 characters.</small> }</div>
+      <div><label>Status</label><select formControlName="status">@for (status of statuses; track status.value) { <option [value]="status.value">{{ status.label }}</option> }</select></div>
+      <div><label>Start Date</label><input type="date" formControlName="startDate" /></div>
+      <div><label>End Date (optional)</label><input type="date" formControlName="endDate" />
+        @if (projectForm.hasError('invalidDateRange')) { <small>End date cannot be before start date.</small> }</div>
+      <div class="description"><label>Description</label><textarea rows="3" maxlength="500" formControlName="description"></textarea></div>
+    </div>
+    <div class="form-actions">@if (editingId() !== null) { <button type="button" class="secondary" (click)="cancelEdit()">Cancel</button> }<button class="primary" type="submit">Save Project</button></div>
+  </form>
+  <div class="toolbar"><label for="project-filter">Filter status</label><select id="project-filter" [formControl]="statusFilter" (change)="load()"><option value="">All statuses</option>@for (status of statuses; track status.value) { <option [value]="status.value">{{ status.label }}</option> }</select></div>
+  @if (isLoading()) { <p>Loading projects...</p> }
+  <div class="project-grid">
+    @for (project of projects(); track project.id) {
+      <article class="project-card">
+        <div class="card-heading"><div><h2>{{ project.name }}</h2><span class="status">{{ project.status }}</span></div><div class="card-actions"><button (click)="edit(project)">Edit</button><button class="danger" [disabled]="busyId() === project.id" (click)="removeProject(project)">Delete</button></div></div>
+        <p>{{ project.description || 'No description' }}</p><p class="dates">{{ project.startDate }} → {{ project.endDate || 'No end date' }}</p>
+        <h3>Assigned Employees ({{ project.employees.length }})</h3>
+        <div class="team">@for (employee of project.employees; track employee.id) { <span>{{ employee.name }} <button aria-label="Remove employee" (click)="unassign(project.id, employee.id)">×</button></span> } @empty { <small>No employees assigned.</small> }</div>
+        <div class="assign"><select (change)="changeAssignment(project.id, $event)"><option value="0">Select employee</option>@for (employee of employees(); track employee.id) { <option [value]="employee.id">{{ employee.name }}</option> }</select><button class="primary" [disabled]="busyId() === project.id" (click)="assign(project)">Assign</button></div>
+      </article>
+    } @empty { @if (!isLoading()) { <p>No projects found.</p> } }
+  </div>
+</section>

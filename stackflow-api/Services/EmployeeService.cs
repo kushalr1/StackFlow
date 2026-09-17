@@ -13,6 +13,7 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
     {
         var query = dbContext.Employees
             .AsNoTracking()
+            .Include(employee => employee.Department)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -40,6 +41,7 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
     {
         return await dbContext.Employees
             .AsNoTracking()
+            .Include(employee => employee.Department)
             .Where(employee => employee.Id == id)
             .Select(employee => ToDto(employee))
             .FirstOrDefaultAsync();

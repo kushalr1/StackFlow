@@ -1,0 +1,110 @@
+<section class="leave-page">
+  <div class="page-heading">
+    <p class="eyebrow">Time away</p>
+    <h1>Leave Requests</h1>
+    <p>Record employee leave and manage pending decisions.</p>
+  </div>
+
+  @if (errorMessage()) { <div class="feedback error" role="alert">{{ errorMessage() }}</div> }
+  @if (successMessage()) { <div class="feedback success" role="status">{{ successMessage() }}</div> }
+
+  <div class="leave-layout">
+    <form class="request-form" [formGroup]="leaveForm" (ngSubmit)="saveRequest()" novalidate>
+      <h2>{{ editingId() === null ? 'Record Leave Request' : 'Edit Leave Request' }}</h2>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="leave-employee">Employee</label>
+          <select id="leave-employee" formControlName="employeeId">
+            <option [ngValue]="0">Select employee</option>
+            @for (employee of employees(); track employee.id) { <option [ngValue]="employee.id">{{ employee.name }}</option> }
+          </select>
+          @if (leaveForm.controls.employeeId.touched && leaveForm.controls.employeeId.invalid) {
+            <small class="validation-error">Employee is required.</small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="leave-type">Leave Type</label>
+          <select id="leave-type" formControlName="leaveType">
+            @for (type of leaveTypes; track type.value) { <option [value]="type.value">{{ type.label }}</option> }
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="start-date">Start Date</label>
+          <input id="start-date" type="date" formControlName="startDate" />
+        </div>
+
+        <div class="field">
+          <label for="end-date">End Date</label>
+          <input id="end-date" type="date" formControlName="endDate" />
+          @if ((leaveForm.controls.startDate.touched || leaveForm.controls.endDate.touched) && leaveForm.hasError('invalidDateRange')) {
+            <small class="validation-error">End date cannot be before start date.</small>
+          }
+        </div>
+
+        <div class="field reason-field">
+          <label for="leave-reason">Reason</label>
+          <textarea id="leave-reason" rows="3" maxlength="500" formControlName="reason"></textarea>
+          @if (leaveForm.controls.reason.touched && leaveForm.controls.reason.invalid) {
+            <small class="validation-error">Enter a reason of at least 5 characters.</small>
+          }
+        </div>
+      </div>
+
+      <div class="form-actions">
+        @if (editingId() !== null) { <button class="secondary" type="button" (click)="cancelEdit()">Cancel</button> }
+        <button class="primary" type="submit" [disabled]="isSaving()">{{ isSaving() ? 'Saving...' : 'Save Request' }}</button>
+      </div>
+    </form>
+
+    <div class="requests-card">
+      <form class="filters" [formGroup]="filterForm" (ngSubmit)="applyFilters()">
+        <select aria-label="Filter by employee" formControlName="employeeId">
+          <option [ngValue]="0">All employees</option>
+          @for (employee of employees(); track employee.id) { <option [ngValue]="employee.id">{{ employee.name }}</option> }
+        </select>
+        <select aria-label="Filter by leave type" formControlName="leaveType">
+          <option value="">All leave types</option>
+          @for (type of leaveTypes; track type.value) { <option [value]="type.value">{{ type.label }}</option> }
+        </select>
+        <select aria-label="Filter by status" formControlName="status">
+          <option value="">All statuses</option>
+          @for (status of statuses; track status) { <option [value]="status">{{ status }}</option> }
+        </select>
+        <button class="primary" type="submit">Filter</button>
+        <button class="secondary" type="button" (click)="clearFilters()">Clear</button>
+      </form>
+
+      @if (isLoading()) {
+        <p class="state-message">Loading leave requests...</p>
+      } @else if (requests().length === 0) {
+        <p class="state-message">No leave requests found.</p>
+      } @else {
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Employee</th><th>Leave</th><th>Dates</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              @for (request of requests(); track request.id) {
+                <tr>
+                  <td><strong>{{ request.employeeName }}</strong><small>{{ request.reason }}</small></td>
+                  <td>{{ request.leaveType }}</td>
+                  <td>{{ request.startDate }}<small>to {{ request.endDate }}</small></td>
+                  <td><span class="status" [class]="'status ' + request.status.toLowerCase()">{{ request.status }}</span></td>
+                  <td class="actions">
+                    <button type="button" (click)="editRequest(request)">Edit</button>
+                    @if (request.status === 'Pending') {
+                      <button class="approve" type="button" [disabled]="updatingStatusId() === request.id" (click)="changeStatus(request, 'Approved')">Approve</button>
+                      <button class="reject" type="button" [disabled]="updatingStatusId() === request.id" (click)="changeStatus(request, 'Rejected')">Reject</button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+</section>

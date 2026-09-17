@@ -100,9 +100,13 @@ h1 {
   border-top-color: #16a34a;
 }
 
-.inactive-card {
+.absent-card {
   border-top-color: #f97316;
 }
+
+.present-card { border-top-color: #16a34a; }
+.leave-card { border-top-color: #eab308; }
+.project-card { border-top-color: #0891b2; }
 
 .department-card {
   border-top-color: #7c3aed;

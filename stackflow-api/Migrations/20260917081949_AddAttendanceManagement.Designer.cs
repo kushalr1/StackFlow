@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using stackflow_api.Data;
@@ -11,9 +12,11 @@ using stackflow_api.Data;
 namespace stackflow_api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260917081949_AddAttendanceManagement")]
+    partial class AddAttendanceManagement
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -151,97 +154,6 @@ namespace stackflow_api.Migrations
                     b.ToTable("Employees", (string)null);
                 });
 
-            modelBuilder.Entity("stackflow_api.Models.EmployeeProject", b =>
-                {
-                    b.Property<int>("EmployeeId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ProjectId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("EmployeeId", "ProjectId");
-
-                    b.HasIndex("ProjectId");
-
-                    b.ToTable("EmployeeProjects", (string)null);
-                });
-
-            modelBuilder.Entity("stackflow_api.Models.LeaveRequest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("AppliedOn")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("EmployeeId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateOnly>("EndDate")
-                        .HasColumnType("date");
-
-                    b.Property<string>("LeaveType")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<DateOnly>("StartDate")
-                        .HasColumnType("date");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EmployeeId");
-
-                    b.ToTable("LeaveRequests", (string)null);
-                });
-
-            modelBuilder.Entity("stackflow_api.Models.Project", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<DateOnly?>("EndDate")
-                        .HasColumnType("date");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateOnly>("StartDate")
-                        .HasColumnType("date");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Projects", (string)null);
-                });
-
             modelBuilder.Entity("stackflow_api.Models.Attendance", b =>
                 {
                     b.HasOne("stackflow_api.Models.Employee", "Employee")
@@ -264,36 +176,6 @@ namespace stackflow_api.Migrations
                     b.Navigation("Department");
                 });
 
-            modelBuilder.Entity("stackflow_api.Models.EmployeeProject", b =>
-                {
-                    b.HasOne("stackflow_api.Models.Employee", "Employee")
-                        .WithMany("EmployeeProjects")
-                        .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("stackflow_api.Models.Project", "Project")
-                        .WithMany("EmployeeProjects")
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Employee");
-
-                    b.Navigation("Project");
-                });
-
-            modelBuilder.Entity("stackflow_api.Models.LeaveRequest", b =>
-                {
-                    b.HasOne("stackflow_api.Models.Employee", "Employee")
-                        .WithMany("LeaveRequests")
-                        .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Employee");
-                });
-
             modelBuilder.Entity("stackflow_api.Models.Department", b =>
                 {
                     b.Navigation("Employees");
@@ -302,15 +184,6 @@ namespace stackflow_api.Migrations
             modelBuilder.Entity("stackflow_api.Models.Employee", b =>
                 {
                     b.Navigation("AttendanceRecords");
-
-                    b.Navigation("EmployeeProjects");
-
-                    b.Navigation("LeaveRequests");
-                });
-
-            modelBuilder.Entity("stackflow_api.Models.Project", b =>
-                {
-                    b.Navigation("EmployeeProjects");
                 });
 #pragma warning restore 612, 618
         }

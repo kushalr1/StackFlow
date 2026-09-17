@@ -3,7 +3,7 @@
     <div>
       <p class="eyebrow">Organization overview</p>
       <h1>Dashboard</h1>
-      <p>A quick summary of your StackFlow employee directory.</p>
+      <p>A live summary of employees, attendance, leave, and projects.</p>
     </div>
 
     <a class="primary-button" routerLink="/employees">View Employees</a>
@@ -16,34 +16,52 @@
       <p>{{ errorMessage() }}</p>
       <button type="button" (click)="loadDashboard()">Try Again</button>
     </div>
-  } @else {
+  } @else if (stats(); as dashboard) {
     <div class="statistics-grid">
       <article class="stat-card total-card">
         <p>Total Employees</p>
-        <strong>{{ totalEmployees() }}</strong>
+        <strong>{{ dashboard.totalEmployees }}</strong>
         <span>Everyone in the directory</span>
       </article>
 
       <article class="stat-card active-card">
         <p>Active Employees</p>
-        <strong>{{ activeEmployees() }}</strong>
+        <strong>{{ dashboard.activeEmployees }}</strong>
         <span>Currently active team members</span>
       </article>
 
-      <article class="stat-card inactive-card">
-        <p>Inactive Employees</p>
-        <strong>{{ inactiveEmployees() }}</strong>
-        <span>Currently inactive team members</span>
+      <article class="stat-card present-card">
+        <p>Present Today</p>
+        <strong>{{ dashboard.presentToday }}</strong>
+        <span>Employees marked present</span>
+      </article>
+
+      <article class="stat-card absent-card">
+        <p>Absent Today</p>
+        <strong>{{ dashboard.absentToday }}</strong>
+        <span>Employees marked absent</span>
+      </article>
+
+      <article class="stat-card leave-card">
+        <p>Pending Leaves</p>
+        <strong>{{ dashboard.pendingLeaveRequests }}</strong>
+        <span>Requests awaiting a decision</span>
       </article>
 
       <article class="stat-card department-card">
         <p>Departments</p>
-        <strong>{{ departmentCount() }}</strong>
-        <span>Unique departments represented</span>
+        <strong>{{ dashboard.totalDepartments }}</strong>
+        <span>Organization departments</span>
+      </article>
+
+      <article class="stat-card project-card">
+        <p>Active Projects</p>
+        <strong>{{ dashboard.activeProjects }}</strong>
+        <span>Projects currently active</span>
       </article>
     </div>
 
-    @if (totalEmployees() === 0) {
+    @if (dashboard.totalEmployees === 0) {
       <div class="empty-message">
         <p>Your directory is empty. Add an employee to populate the dashboard.</p>
         <a class="primary-button" routerLink="/employees/add">Add Employee</a>

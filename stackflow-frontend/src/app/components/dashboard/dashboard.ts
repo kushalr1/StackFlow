@@ -1,9 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
-import { Employee } from '../../models/employee';
-import { EmployeeService } from '../../services/employee.service';
+import { DashboardStats } from '../../models/dashboard-stats';
+import { DashboardService } from '../../services/dashboard.service';
 
 @Component({
   imports: [RouterLink],
@@ -12,25 +12,11 @@ import { EmployeeService } from '../../services/employee.service';
   templateUrl: './dashboard.html',
 })
 export class Dashboard implements OnInit {
-  private readonly employeeService = inject(EmployeeService);
+  private readonly dashboardService = inject(DashboardService);
 
-  protected readonly employees = signal<Employee[]>([]);
+  protected readonly stats = signal<DashboardStats | null>(null);
   protected readonly isLoading = signal(true);
   protected readonly errorMessage = signal('');
-
-  protected readonly totalEmployees = computed(() => this.employees().length);
-  protected readonly activeEmployees = computed(
-    () => this.employees().filter((employee) => employee.isActive).length,
-  );
-  protected readonly inactiveEmployees = computed(
-    () => this.employees().filter((employee) => !employee.isActive).length,
-  );
-  protected readonly departmentCount = computed(
-    () =>
-      new Set(
-        this.employees().map((employee) => employee.department.toLowerCase()),
-      ).size,
-  );
 
   ngOnInit(): void {
     this.loadDashboard();
@@ -40,11 +26,11 @@ export class Dashboard implements OnInit {
     this.isLoading.set(true);
     this.errorMessage.set('');
 
-    this.employeeService
-      .getEmployees()
+    this.dashboardService
+      .getStats()
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
-        next: (employees) => this.employees.set(employees),
+        next: (stats) => this.stats.set(stats),
         error: (error: HttpErrorResponse) => {
           const message =
             error.status === 0
