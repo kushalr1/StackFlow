@@ -43,6 +43,13 @@ h1 {
   cursor: pointer;
 }
 
+.primary-button:hover,
+.state-card button:hover {
+  background: #1d4ed8;
+  box-shadow: 0 6px 14px rgb(37 99 235 / 20%);
+  transform: translateY(-1px);
+}
+
 .statistics-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -61,6 +68,14 @@ h1 {
 .stat-card {
   border-top: 4px solid #2563eb;
   padding: 1.25rem;
+  transition:
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.stat-card:hover {
+  box-shadow: 0 10px 24px rgb(15 23 42 / 9%);
+  transform: translateY(-2px);
 }
 
 .stat-card p {
