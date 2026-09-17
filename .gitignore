@@ -1,16 +1,24 @@
 # macOS and editors
 .DS_Store
+Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
 !.vscode/launch.json
 !.vscode/tasks.json
+**/.vscode/mcp.json
 
 # Secrets and local configuration
 .env
 .env.*
 !.env.example
+.npmrc
 appsettings.Development.json
+secrets.json
+*.pfx
+*.p12
+*.pem
+*.key
 
 # .NET output
 **/bin/
@@ -30,3 +38,7 @@ TestResults/
 coverage/
 coverage-*/
 
+# Local databases
+*.db
+*.db-shm
+*.db-wal
