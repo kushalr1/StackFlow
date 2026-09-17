@@ -1,38 +1,28 @@
-<header class="app-header">
-  <div class="header-content">
-    <a class="brand" routerLink="/dashboard" aria-label="StackFlow dashboard">
-      <span class="brand-mark">SF</span>
-      <span>
-        <strong>StackFlow</strong>
-        <small>Employee Management</small>
-      </span>
-    </a>
+@if (authService.isAuthenticated()) {
+  <div class="admin-shell">
+    <aside class="sidebar">
+      <a class="brand" routerLink="/dashboard" aria-label="StackFlow dashboard">
+        <span class="brand-mark">SF</span>
+        <span><strong>StackFlow</strong><small>Admin Management</small></span>
+      </a>
 
-    <nav class="main-nav" aria-label="Primary navigation">
-      <a
-        routerLink="/dashboard"
-        routerLinkActive="active"
-        [routerLinkActiveOptions]="{ exact: true }"
-      >
-        Dashboard
-      </a>
-      <a
-        routerLink="/employees"
-        routerLinkActive="active"
-        [routerLinkActiveOptions]="{ exact: true }"
-      >
-        Employees
-      </a>
-      <a routerLink="/employees/add" routerLinkActive="active">
-        Add Employee
-      </a>
-      <a routerLink="/departments" routerLinkActive="active">
-        Departments
-      </a>
-    </nav>
+      <nav aria-label="Admin navigation">
+        <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+        <a routerLink="/employees" routerLinkActive="active">Employees</a>
+        <span class="future-link" aria-disabled="true">Attendance <small>Soon</small></span>
+        <span class="future-link" aria-disabled="true">Leave Requests <small>Soon</small></span>
+        <a routerLink="/departments" routerLinkActive="active">Departments</a>
+        <span class="future-link" aria-disabled="true">Projects <small>Soon</small></span>
+      </nav>
+
+      <div class="sidebar-footer">
+        <small>{{ authService.adminEmail() }}</small>
+        <button type="button" (click)="logout()">Logout</button>
+      </div>
+    </aside>
+
+    <main class="page-content"><router-outlet /></main>
   </div>
-</header>
-
-<main class="page-content">
+} @else {
   <router-outlet />
-</main>
+}

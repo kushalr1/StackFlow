@@ -1,0 +1,32 @@
+<main class="login-page">
+  <section class="login-card">
+    <div class="brand-mark" aria-hidden="true">SF</div>
+    <p class="eyebrow">Admin access</p>
+    <h1>Welcome to StackFlow</h1>
+    <p class="intro">Sign in to manage employees and organization data.</p>
+
+    <form [formGroup]="loginForm" (ngSubmit)="login()" novalidate>
+      @if (errorMessage()) {
+        <div class="error-message" role="alert">{{ errorMessage() }}</div>
+      }
+
+      <label for="login-email">Email</label>
+      <input id="login-email" type="email" autocomplete="username" formControlName="email" />
+      @if (loginForm.controls.email.touched && loginForm.controls.email.hasError('required')) {
+        <small>Email is required.</small>
+      } @else if (loginForm.controls.email.touched && loginForm.controls.email.hasError('email')) {
+        <small>Enter a valid email address.</small>
+      }
+
+      <label for="login-password">Password</label>
+      <input id="login-password" type="password" autocomplete="current-password" formControlName="password" />
+      @if (loginForm.controls.password.touched && loginForm.controls.password.hasError('required')) {
+        <small>Password is required.</small>
+      }
+
+      <button type="submit" [disabled]="isSubmitting()">
+        {{ isSubmitting() ? 'Signing in...' : 'Login' }}
+      </button>
+    </form>
+  </section>
+</main>

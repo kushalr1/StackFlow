@@ -4,11 +4,14 @@ import { App } from './app';
 
 describe('App', () => {
   beforeEach(async () => {
+    sessionStorage.clear();
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [provideRouter([])],
     }).compileComponents();
   });
+
+  afterEach(() => sessionStorage.clear());
 
   it('should create the app', () => {
     const fixture = TestBed.createComponent(App);
@@ -24,10 +27,13 @@ describe('App', () => {
   });
 
   it('should render the primary navigation links', () => {
+    const payload = btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 }));
+    sessionStorage.setItem('stackflow_admin_token', `header.${payload}.signature`);
+    sessionStorage.setItem('stackflow_admin_email', 'admin@stackflow.local');
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
-    const links = fixture.nativeElement.querySelectorAll('nav a');
+    const items = fixture.nativeElement.querySelectorAll('nav > *');
 
-    expect(links).toHaveLength(4);
+    expect(items).toHaveLength(6);
   });
 });

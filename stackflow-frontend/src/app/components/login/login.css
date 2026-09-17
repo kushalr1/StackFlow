@@ -1,0 +1,15 @@
+.login-page { display: grid; min-height: 100vh; padding: 1.5rem; place-items: center; }
+.login-card { width: min(100%, 430px); border: 1px solid #e2e8f0; border-radius: 18px; background: #fff; padding: 2rem; box-shadow: 0 20px 50px rgb(15 23 42 / 12%); }
+.brand-mark { display: grid; width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #2563eb, #4f46e5); color: #fff; font-weight: 800; place-items: center; }
+.eyebrow { margin: 1.25rem 0 0.35rem; color: #2563eb; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+h1 { margin: 0; color: #0f172a; }
+.intro { margin: 0.5rem 0 1.5rem; color: #64748b; }
+form { display: grid; gap: 0.5rem; }
+label { margin-top: 0.65rem; color: #334155; font-size: 0.9rem; font-weight: 700; }
+input { width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.75rem 0.85rem; }
+input:focus { border-color: #2563eb; outline: 3px solid #dbeafe; }
+small, .error-message { color: #b91c1c; }
+.error-message { border-radius: 8px; background: #fef2f2; padding: 0.75rem; }
+button { margin-top: 1rem; border: 0; border-radius: 8px; background: #2563eb; padding: 0.8rem; color: #fff; font-weight: 700; cursor: pointer; }
+button:hover:not(:disabled) { background: #1d4ed8; }
+button:disabled { opacity: 0.65; cursor: not-allowed; }

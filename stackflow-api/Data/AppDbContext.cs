@@ -10,9 +10,27 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Department> Departments => Set<Department>();
 
+    public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        var adminUser = modelBuilder.Entity<AdminUser>();
+
+        adminUser.ToTable("AdminUsers");
+        adminUser.HasKey(admin => admin.Id);
+
+        adminUser.Property(admin => admin.Email)
+            .IsRequired()
+            .HasMaxLength(255);
+
+        adminUser.HasIndex(admin => admin.Email)
+            .IsUnique();
+
+        adminUser.Property(admin => admin.PasswordHash)
+            .IsRequired()
+            .HasMaxLength(500);
 
         var department = modelBuilder.Entity<Department>();
 

@@ -1,33 +1,50 @@
 @host = http://localhost:5090
 @employeeId = 1
+@token = paste-login-token-here
+
+### Admin login
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@stackflow.local",
+  "password": "your-user-secret-password"
+}
+
+###
 
 ### Get all employees
 GET {{host}}/api/employees
 Accept: application/json
+Authorization: Bearer {{token}}
 
 ###
 
 ### Search employees
 GET {{host}}/api/employees?search=kushal
 Accept: application/json
+Authorization: Bearer {{token}}
 
 ###
 
 ### Filter employees by department
 GET {{host}}/api/employees?departmentId=1
 Accept: application/json
+Authorization: Bearer {{token}}
 
 ###
 
 ### Get one employee
 GET {{host}}/api/employees/{{employeeId}}
 Accept: application/json
+Authorization: Bearer {{token}}
 
 ###
 
 ### Create an employee
 POST {{host}}/api/employees
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "name": "Kushal Sharma",
@@ -45,6 +62,7 @@ Content-Type: application/json
 ### Update an employee
 PUT {{host}}/api/employees/{{employeeId}}
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "name": "Kushal Sharma",
@@ -61,18 +79,21 @@ Content-Type: application/json
 
 ### Delete an employee
 DELETE {{host}}/api/employees/{{employeeId}}
+Authorization: Bearer {{token}}
 
 ###
 
 ### Get all departments
 GET {{host}}/api/departments
 Accept: application/json
+Authorization: Bearer {{token}}
 
 ###
 
 ### Create a department
 POST {{host}}/api/departments
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "name": "Quality Assurance",
