@@ -52,11 +52,13 @@
                 <tr>
                   <td><strong>{{ department.name }}</strong><small>{{ department.description || 'No description' }}</small></td>
                   <td>{{ department.employeeCount }}</td>
-                  <td class="actions">
-                    <button type="button" (click)="editDepartment(department)">Edit</button>
-                    <button class="danger" type="button" [disabled]="deletingId() === department.id" (click)="deleteDepartment(department)">
-                      {{ deletingId() === department.id ? 'Deleting...' : 'Delete' }}
-                    </button>
+                  <td>
+                    <div class="actions">
+                      <button type="button" (click)="editDepartment(department)">Edit</button>
+                      <button class="danger" type="button" [disabled]="deletingId() === department.id" (click)="deleteDepartment(department)">
+                        {{ deletingId() === department.id ? 'Deleting...' : 'Delete' }}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               }

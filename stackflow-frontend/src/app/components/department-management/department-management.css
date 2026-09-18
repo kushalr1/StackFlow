@@ -20,7 +20,7 @@ button { border-radius: 8px; padding: 0.65rem 0.85rem; font: inherit; font-weigh
 .secondary-button { border: 1px solid #cbd5e1; background: #fff; color: #334155; }
 .table-scroll { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; text-align: left; }
-th, td { padding: 0.9rem; border-bottom: 1px solid #e2e8f0; }
+th, td { padding: 0.9rem; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
 th { background: #f8fafc; color: #475569; font-size: 0.75rem; text-transform: uppercase; }
 td small { display: block; margin-top: 0.25rem; color: #64748b; }
 .actions { display: flex; gap: 0.5rem; }
