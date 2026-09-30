@@ -8,7 +8,7 @@ import { Employee, EmployeeRequest } from '../models/employee';
 import { EmployeeService } from './employee.service';
 
 describe('EmployeeService', () => {
-  const apiUrl = 'http://localhost:5090/api/employees';
+  const apiUrl = '/api/employees';
   const employeeRequest: EmployeeRequest = {
     name: 'Aarav Mehta',
     email: 'aarav.mehta@example.com',
@@ -17,9 +17,16 @@ describe('EmployeeService', () => {
     jobTitle: 'Developer',
     salary: 75000,
     dateOfJoining: '2026-01-15',
-    isActive: true,
   };
-  const employee: Employee = { id: 1, department: 'Engineering', ...employeeRequest };
+  const employee: Employee = {
+    id: 1,
+    department: 'Engineering',
+    isActive: true,
+    relievedDate: null,
+    relievingReason: null,
+    projectHistory: [],
+    ...employeeRequest,
+  };
 
   let service: EmployeeService;
   let httpTesting: HttpTestingController;
@@ -43,6 +50,20 @@ describe('EmployeeService', () => {
     });
 
     const request = httpTesting.expectOne(apiUrl);
+    expect(request.request.method).toBe('GET');
+    request.flush([employee]);
+  });
+
+  it('should filter employees by department and active status', () => {
+    service.getEmployees(undefined, 1, true).subscribe();
+
+    const request = httpTesting.expectOne(
+      (candidate) =>
+        candidate.url === apiUrl &&
+        candidate.params.get('departmentId') === '1' &&
+        candidate.params.get('isActive') === 'true',
+    );
+
     expect(request.request.method).toBe('GET');
     request.flush([employee]);
   });
@@ -72,6 +93,16 @@ describe('EmployeeService', () => {
 
     const request = httpTesting.expectOne(`${apiUrl}/1`);
     expect(request.request.method).toBe('DELETE');
+    request.flush(null);
+  });
+
+  it('should send a PATCH request to relieve an employee', () => {
+    const body = { relievedDate: '2026-09-29', reason: 'Resigned' };
+    service.relieveEmployee(1, body).subscribe();
+
+    const request = httpTesting.expectOne(`${apiUrl}/1/relieve`);
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual(body);
     request.flush(null);
   });
 });

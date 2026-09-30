@@ -10,7 +10,7 @@ public interface IProjectService
     Task<ProjectSaveResult> CreateAsync(SaveProjectDto dto);
     Task<ProjectSaveOutcome> UpdateAsync(int id, SaveProjectDto dto);
     Task<ProjectSaveOutcome> DeleteAsync(int id);
-    Task<ProjectSaveOutcome> AssignEmployeeAsync(int projectId, int employeeId);
+    Task<ProjectSaveOutcome> AssignEmployeeAsync(int projectId, AssignEmployeeDto dto);
     Task<ProjectSaveOutcome> RemoveEmployeeAsync(int projectId, int employeeId);
 }
 
@@ -20,7 +20,10 @@ public enum ProjectSaveOutcome
     NotFound,
     EmployeeNotFound,
     DuplicateAssignment,
-    AssignmentNotFound
+    AssignmentNotFound,
+    InactiveEmployee,
+    TeamLocked,
+    HasAssignmentHistory
 }
 
 public record ProjectSaveResult(ProjectSaveOutcome Outcome, ProjectDto? Project = null);

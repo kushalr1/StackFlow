@@ -45,6 +45,74 @@ form {
   box-shadow: 0 4px 14px rgb(15 23 42 / 5%);
 }
 
+.employment-card {
+  display: grid;
+  margin-top: 1.5rem;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  background: #fffaf5;
+  padding: 1.5rem;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr);
+  gap: 2rem;
+}
+
+.employment-card h2 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.employment-card p {
+  color: #64748b;
+}
+
+.employment-label {
+  margin: 0 0 0.35rem;
+  color: #b45309 !important;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.relief-form {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.relief-form .form-field + .form-field {
+  margin-top: 1rem;
+}
+
+textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.7rem 0.8rem;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  resize: vertical;
+}
+
+.relieve-button {
+  width: 100%;
+  margin-top: 1rem;
+  border: 0;
+  border-radius: 8px;
+  background: #b45309;
+  padding: 0.7rem 1rem;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.relieve-button:hover:not(:disabled) {
+  background: #92400e;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -55,6 +123,12 @@ form {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
+}
+
+.form-grid > .form-field {
+  display: grid;
+  grid-template-rows: auto auto minmax(1.25rem, auto);
+  align-content: start;
 }
 
 .full-width {
@@ -91,6 +165,105 @@ select {
   font: inherit;
 }
 
+.phone-input {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 0.5rem;
+}
+
+.custom-dropdown {
+  position: relative;
+  min-width: 0;
+}
+
+.dropdown-trigger {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0.65rem 0.75rem;
+  color: #0f172a;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.country-trigger {
+  justify-content: flex-start;
+  padding-inline: 0.55rem;
+}
+
+.country-trigger .chevron {
+  margin-left: auto;
+}
+
+.chevron {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.dropdown-trigger:focus {
+  border-color: #2563eb;
+  outline: 3px solid #dbeafe;
+}
+
+.dropdown-trigger.invalid {
+  border-color: #dc2626;
+  background: #fffafa;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  z-index: 50;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #ffffff;
+  padding: 0.3rem;
+  box-shadow: 0 12px 30px rgb(15 23 42 / 18%);
+}
+
+.country-menu {
+  width: 275px;
+}
+
+.department-menu {
+  right: 0;
+}
+
+.dropdown-menu button {
+  display: flex;
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 0.65rem 0.7rem;
+  color: #334155;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.dropdown-menu button:hover,
+.dropdown-menu button.selected {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.country-menu button strong {
+  margin-left: auto;
+}
+
 input:focus,
 select:focus {
   border-color: #2563eb;
@@ -118,6 +291,7 @@ select.ng-invalid.ng-touched {
 
 .validation-error {
   color: #b91c1c;
+  font-size: 0.76rem;
 }
 
 .feedback {
@@ -207,5 +381,13 @@ select.ng-invalid.ng-touched {
   .primary-button,
   .secondary-button {
     text-align: center;
+  }
+
+  .employment-card {
+    grid-template-columns: 1fr;
+  }
+
+  .phone-input {
+    grid-template-columns: 1fr;
   }
 }

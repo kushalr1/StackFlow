@@ -107,6 +107,41 @@ public class EmployeesControllerTests
     }
 
     [Fact]
+    public async Task Delete_WithAttendanceOrLeaveHistory_Returns409Conflict()
+    {
+        var service = new FakeEmployeeService { HasRelatedRecords = true };
+        var existing = await service.CreateAsync(CreateRequest("Aarav Mehta", 1));
+        Assert.NotNull(existing);
+        var controller = new EmployeesController(service);
+
+        var result = await controller.Delete(existing.Id);
+
+        Assert.IsType<ConflictObjectResult>(result);
+        Assert.NotNull(await service.GetByIdAsync(existing.Id));
+    }
+
+    [Fact]
+    public async Task Relieve_WithActiveEmployee_Returns204AndPreservesEmployee()
+    {
+        var service = new FakeEmployeeService();
+        var existing = await service.CreateAsync(CreateRequest("Aarav Mehta", 1));
+        Assert.NotNull(existing);
+        var controller = new EmployeesController(service);
+
+        var result = await controller.Relieve(existing.Id, new RelieveEmployeeDto
+        {
+            RelievedDate = new DateOnly(2026, 9, 29),
+            Reason = "Resigned"
+        });
+
+        Assert.IsType<NoContentResult>(result);
+        var relieved = await service.GetByIdAsync(existing.Id);
+        Assert.NotNull(relieved);
+        Assert.False(relieved.IsActive);
+        Assert.Equal(new DateOnly(2026, 9, 29), relieved.RelievedDate);
+    }
+
+    [Fact]
     public async Task GetAll_WithSearch_ReturnsMatchingEmployees()
     {
         // Arrange
@@ -149,8 +184,8 @@ public class EmployeesControllerTests
         return new CreateEmployeeDto
         {
             Name = name,
-            Email = $"{name.Replace(" ", ".").ToLowerInvariant()}@example.com",
-            Phone = "9876543210",
+            Email = $"{name.Replace(" ", ".").ToLowerInvariant()}@gmail.com",
+            Phone = "+919876543210",
             DepartmentId = departmentId,
             JobTitle = "Developer",
             Salary = 75000,
@@ -164,8 +199,8 @@ public class EmployeesControllerTests
         return new UpdateEmployeeDto
         {
             Name = name,
-            Email = "aarav.mehta@example.com",
-            Phone = "9876543210",
+            Email = "aarav.mehta@gmail.com",
+            Phone = "+919876543210",
             DepartmentId = departmentId,
             JobTitle = "Senior Developer",
             Salary = 90000,
@@ -179,9 +214,12 @@ public class EmployeesControllerTests
         private readonly List<EmployeeDto> employees = [];
         private int nextId = 1;
 
+        public bool HasRelatedRecords { get; init; }
+
         public Task<IReadOnlyList<EmployeeDto>> GetAllAsync(
             string? search,
-            int? departmentId)
+            int? departmentId,
+            bool? isActive)
         {
             IEnumerable<EmployeeDto> result = employees;
 
@@ -197,6 +235,11 @@ public class EmployeesControllerTests
             {
                 result = result.Where(employee =>
                     employee.DepartmentId == departmentId.Value);
+            }
+
+            if (isActive.HasValue)
+            {
+                result = result.Where(employee => employee.IsActive == isActive.Value);
             }
 
             return Task.FromResult<IReadOnlyList<EmployeeDto>>(result.ToList());
@@ -249,17 +292,42 @@ public class EmployeesControllerTests
             return Task.FromResult(EmployeeUpdateResult.Updated);
         }
 
-        public Task<bool> DeleteAsync(int id)
+        public Task<EmployeeRelieveResult> RelieveAsync(int id, RelieveEmployeeDto dto)
+        {
+            var employee = employees.FirstOrDefault(employee => employee.Id == id);
+            if (employee is null) return Task.FromResult(EmployeeRelieveResult.NotFound);
+            if (!employee.IsActive) return Task.FromResult(EmployeeRelieveResult.AlreadyRelieved);
+            if (dto.RelievedDate > DateOnly.FromDateTime(DateTime.Today))
+            {
+                return Task.FromResult(EmployeeRelieveResult.FutureDate);
+            }
+            if (dto.RelievedDate < employee.DateOfJoining)
+            {
+                return Task.FromResult(EmployeeRelieveResult.BeforeJoiningDate);
+            }
+
+            employee.IsActive = false;
+            employee.RelievedDate = dto.RelievedDate;
+            employee.RelievingReason = dto.Reason;
+            return Task.FromResult(EmployeeRelieveResult.Relieved);
+        }
+
+        public Task<EmployeeDeleteResult> DeleteAsync(int id)
         {
             var employee = employees.FirstOrDefault(employee => employee.Id == id);
 
             if (employee is null)
             {
-                return Task.FromResult(false);
+                return Task.FromResult(EmployeeDeleteResult.NotFound);
+            }
+
+            if (HasRelatedRecords)
+            {
+                return Task.FromResult(EmployeeDeleteResult.HasRelatedRecords);
             }
 
             employees.Remove(employee);
-            return Task.FromResult(true);
+            return Task.FromResult(EmployeeDeleteResult.Deleted);
         }
 
         private static string GetDepartmentName(int departmentId)

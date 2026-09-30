@@ -6,7 +6,7 @@ import { LeaveRequest, LeaveStatus, LeaveType, SaveLeaveRequest } from '../model
 @Injectable({ providedIn: 'root' })
 export class LeaveRequestService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:5090/api/leaves';
+  private readonly apiUrl = '/api/leaves';
 
   getLeaveRequests(employeeId?: number, status?: string, leaveType?: string): Observable<LeaveRequest[]> {
     let params = new HttpParams();

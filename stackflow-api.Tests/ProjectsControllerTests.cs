@@ -21,18 +21,27 @@ public class ProjectsControllerTests
     {
         var service = new FakeProjectService();
         var project = await service.CreateAsync(ValidProject());
-        await service.AssignEmployeeAsync(project.Project!.Id, 1);
+        await service.AssignEmployeeAsync(project.Project!.Id, new AssignEmployeeDto { EmployeeId = 1 });
         var controller = new ProjectsController(service);
         var result = await controller.AssignEmployee(project.Project.Id, new AssignEmployeeDto { EmployeeId = 1 });
         Assert.IsType<ConflictObjectResult>(result);
     }
 
     [Fact]
-    public void Validation_EndBeforeStart_IsInvalid()
+    public void Validation_DueBeforeStart_IsInvalid()
     {
         var dto = ValidProject();
-        dto.EndDate = new DateOnly(2026, 9, 16);
+        dto.DueDate = new DateOnly(2026, 9, 16);
         Assert.Single(dto.Validate(new System.ComponentModel.DataAnnotations.ValidationContext(dto)));
+    }
+
+    [Fact]
+    public void Validation_CompletedWithoutActualDate_IsInvalid()
+    {
+        var dto = ValidProject();
+        dto.Status = ProjectStatus.Completed;
+        Assert.Contains(dto.Validate(new System.ComponentModel.DataAnnotations.ValidationContext(dto)),
+            result => result.MemberNames.Contains(nameof(SaveProjectDto.CompletedOn)));
     }
 
     private static SaveProjectDto ValidProject() => new()
@@ -53,8 +62,8 @@ public class ProjectsControllerTests
         }
         public Task<ProjectSaveOutcome> UpdateAsync(int id, SaveProjectDto dto) => Task.FromResult(ProjectSaveOutcome.Saved);
         public Task<ProjectSaveOutcome> DeleteAsync(int id) => Task.FromResult(ProjectSaveOutcome.Saved);
-        public Task<ProjectSaveOutcome> AssignEmployeeAsync(int projectId, int employeeId) =>
-            Task.FromResult(assignments.Add((projectId, employeeId)) ? ProjectSaveOutcome.Saved : ProjectSaveOutcome.DuplicateAssignment);
+        public Task<ProjectSaveOutcome> AssignEmployeeAsync(int projectId, AssignEmployeeDto dto) =>
+            Task.FromResult(assignments.Add((projectId, dto.EmployeeId)) ? ProjectSaveOutcome.Saved : ProjectSaveOutcome.DuplicateAssignment);
         public Task<ProjectSaveOutcome> RemoveEmployeeAsync(int projectId, int employeeId) =>
             Task.FromResult(assignments.Remove((projectId, employeeId)) ? ProjectSaveOutcome.Saved : ProjectSaveOutcome.AssignmentNotFound);
     }

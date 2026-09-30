@@ -6,7 +6,7 @@ import { LoginRequest, LoginResponse } from '../models/auth';
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:5090/api/auth';
+  private readonly apiUrl = '/api/auth';
   private readonly tokenKey = 'stackflow_admin_token';
   private readonly emailKey = 'stackflow_admin_email';
 

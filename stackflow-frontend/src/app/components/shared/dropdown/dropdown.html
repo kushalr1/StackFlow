@@ -1,0 +1,31 @@
+<div class="dropdown">
+  <button
+    class="trigger"
+    type="button"
+    [disabled]="isDisabled"
+    [attr.aria-label]="ariaLabel"
+    aria-haspopup="listbox"
+    [attr.aria-expanded]="isOpen"
+    (click)="toggle($event)"
+  >
+    <span [class.placeholder]="selectedLabel === placeholder">{{ selectedLabel }}</span>
+    <span class="chevron" aria-hidden="true">⌄</span>
+  </button>
+
+  @if (isOpen) {
+    <div class="menu" role="listbox" (click)="$event.stopPropagation()">
+      @for (option of options; track option.value) {
+        <button
+          type="button"
+          role="option"
+          [class.selected]="option.value === currentValue"
+          [attr.aria-selected]="option.value === currentValue"
+          (click)="select(option, $event)"
+        >
+          <span>{{ option.label }}</span>
+          @if (option.value === currentValue) { <span class="check" aria-hidden="true">✓</span> }
+        </button>
+      }
+    </div>
+  }
+</div>

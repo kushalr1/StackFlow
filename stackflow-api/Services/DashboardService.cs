@@ -15,10 +15,16 @@ public class DashboardService(AppDbContext dbContext) : IDashboardService
         {
             TotalEmployees = await dbContext.Employees.CountAsync(),
             ActiveEmployees = await dbContext.Employees.CountAsync(employee => employee.IsActive),
+            RelievedEmployees = await dbContext.Employees.CountAsync(employee => !employee.IsActive),
             PresentToday = await dbContext.AttendanceRecords.CountAsync(record =>
                 record.Date == today && record.Status == AttendanceStatus.Present),
             AbsentToday = await dbContext.AttendanceRecords.CountAsync(record =>
                 record.Date == today && record.Status == AttendanceStatus.Absent),
+            OnLeaveToday = await dbContext.LeaveRequests.CountAsync(request =>
+                request.Employee.IsActive &&
+                request.Status == LeaveStatus.Approved &&
+                request.StartDate <= today &&
+                request.EndDate >= today),
             PendingLeaveRequests = await dbContext.LeaveRequests.CountAsync(request =>
                 request.Status == LeaveStatus.Pending),
             TotalDepartments = await dbContext.Departments.CountAsync(),

@@ -9,4 +9,6 @@ public class DepartmentDto
     public string Description { get; set; } = string.Empty;
 
     public int EmployeeCount { get; set; }
+
+    public int RelievedEmployeeCount { get; set; }
 }

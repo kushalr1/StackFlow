@@ -23,6 +23,8 @@ table { width: 100%; border-collapse: collapse; text-align: left; }
 th, td { padding: 0.9rem; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
 th { background: #f8fafc; color: #475569; font-size: 0.75rem; text-transform: uppercase; }
 td small { display: block; margin-top: 0.25rem; color: #64748b; }
+.employee-count-link { color: #2563eb; font-weight: 700; text-decoration: none; }
+.employee-count-link:hover { text-decoration: underline; }
 .actions { display: flex; gap: 0.5rem; }
 .actions button { border: 0; background: transparent; padding: 0; color: #2563eb; }
 .actions .danger { color: #dc2626; }

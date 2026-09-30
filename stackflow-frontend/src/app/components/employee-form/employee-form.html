@@ -6,7 +6,7 @@
       {{
         isEditMode()
           ? 'Update the employee information below.'
-          : "Enter the employee's information. All fields except active status are required."
+          : "Enter the employee's information. All fields are required."
       }}
     </p>
   </div>
@@ -65,22 +65,52 @@
 
       <div class="form-field">
         <label for="phone">Phone</label>
-        <input id="phone" type="tel" formControlName="phone" autocomplete="tel" />
-        @if (employeeForm.controls.phone.touched && employeeForm.controls.phone.hasError('required')) {
+        <div class="phone-input">
+          <div class="custom-dropdown country-dropdown">
+            <button class="dropdown-trigger country-trigger" [class.invalid]="employeeForm.controls.countryCode.touched && employeeForm.controls.countryCode.invalid" type="button" aria-label="Select phone country" aria-haspopup="listbox" [attr.aria-expanded]="countryDropdownOpen()" (click)="toggleCountryDropdown($event)">
+              @if (selectedPhoneCountry(); as country) { <span>{{ country.flag }}</span><strong>{{ country.code }}</strong> }
+              @else { <span>🇮🇳</span><strong>+91</strong> }
+              <span class="chevron">⌄</span>
+            </button>
+            @if (countryDropdownOpen()) {
+              <div class="dropdown-menu country-menu" role="listbox" (click)="$event.stopPropagation()">
+                <button type="button" role="option" [class.selected]="!employeeForm.controls.countryCode.value" (click)="selectCountry('', $event)">Select country</button>
+                @for (country of phoneCountries; track country.code) {
+                  <button type="button" role="option" [class.selected]="employeeForm.controls.countryCode.value === country.code" (click)="selectCountry(country.code, $event)">
+                    <span>{{ country.flag }}</span><span>{{ country.name }}</span><strong>{{ country.code }}</strong>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+          <input id="phone" type="tel" inputmode="numeric" formControlName="phone" autocomplete="tel-national" [attr.maxlength]="selectedPhoneCountry()?.digits ?? 15" placeholder="Phone number" />
+        </div>
+        @if (employeeForm.controls.countryCode.touched && employeeForm.controls.countryCode.hasError('required')) {
+          <small class="validation-error">Select a country first.</small>
+        } @else if (employeeForm.controls.phone.touched && employeeForm.controls.phone.hasError('required')) {
           <small class="validation-error">Phone is required.</small>
         } @else if (employeeForm.controls.phone.touched && employeeForm.controls.phone.hasError('pattern')) {
-          <small class="validation-error">Phone must contain 10 to 15 digits.</small>
+          <small class="validation-error">Phone can contain digits only.</small>
+        } @else if (employeeForm.controls.phone.touched && employeeForm.hasError('countryPhone')) {
+          <small class="validation-error">Enter {{ selectedPhoneCountry()?.digits }} digits.</small>
         }
       </div>
 
       <div class="form-field">
         <label for="department">Department</label>
-        <select id="department" formControlName="departmentId">
-          <option [ngValue]="0">Select a department</option>
-          @for (department of departments(); track department.id) {
-            <option [ngValue]="department.id">{{ department.name }}</option>
+        <div class="custom-dropdown department-dropdown" id="department">
+          <button class="dropdown-trigger" [class.invalid]="employeeForm.controls.departmentId.touched && employeeForm.controls.departmentId.invalid" type="button" aria-haspopup="listbox" [attr.aria-expanded]="departmentDropdownOpen()" (click)="toggleDepartmentDropdown($event)">
+            <span>{{ selectedDepartment()?.name || 'Select a department' }}</span><span class="chevron">⌄</span>
+          </button>
+          @if (departmentDropdownOpen()) {
+            <div class="dropdown-menu department-menu" role="listbox" (click)="$event.stopPropagation()">
+              <button type="button" role="option" [class.selected]="employeeForm.controls.departmentId.value === 0" (click)="selectDepartment(0, $event)">Select a department</button>
+              @for (department of departments(); track department.id) {
+                <button type="button" role="option" [class.selected]="employeeForm.controls.departmentId.value === department.id" (click)="selectDepartment(department.id, $event)">{{ department.name }}</button>
+              }
+            </div>
           }
-        </select>
+        </div>
         @if (employeeForm.controls.departmentId.touched && employeeForm.controls.departmentId.hasError('min')) {
           <small class="validation-error">Department is required.</small>
         }
@@ -110,16 +140,12 @@
 
       <div class="form-field">
         <label for="dateOfJoining">Date of Joining</label>
-        <input id="dateOfJoining" type="date" formControlName="dateOfJoining" />
+        <input appDatePicker id="dateOfJoining" type="date" formControlName="dateOfJoining" />
         @if (employeeForm.controls.dateOfJoining.touched && employeeForm.controls.dateOfJoining.hasError('required')) {
           <small class="validation-error">Date of joining is required.</small>
         }
       </div>
 
-      <label class="checkbox-field full-width">
-        <input type="checkbox" formControlName="isActive" />
-        <span>Employee is active</span>
-      </label>
     </div>
 
     <div class="form-actions">
@@ -133,5 +159,48 @@
       </button>
     </div>
     </form>
+
+    @if (isEditMode() && loadedEmployee(); as employee) {
+      <section class="employment-card">
+        <div>
+          <p class="employment-label">Employment status</p>
+          <h2>{{ employee.isActive ? 'Active employee' : 'Relieved employee' }}</h2>
+          @if (employee.isActive) {
+            <p>Use this only when the employee permanently leaves the organization. Historical records will be preserved.</p>
+          } @else {
+            <p>Relieved on {{ employee.relievedDate || 'an unrecorded date' }}.</p>
+            @if (employee.relievingReason) {
+              <p>Reason: {{ employee.relievingReason }}</p>
+            }
+          }
+        </div>
+
+        @if (employee.isActive) {
+          <form class="relief-form" [formGroup]="reliefForm" (ngSubmit)="relieveEmployee()">
+            @if (reliefError()) {
+              <div class="feedback error" role="alert">{{ reliefError() }}</div>
+            }
+            <div class="form-field">
+              <label for="relievedDate">Last Working Date</label>
+              <input
+                appDatePicker
+                id="relievedDate"
+                type="date"
+                formControlName="relievedDate"
+                [min]="employee.dateOfJoining"
+                [max]="todayDate"
+              />
+            </div>
+            <div class="form-field">
+              <label for="relievingReason">Reason (optional)</label>
+              <textarea id="relievingReason" maxlength="500" rows="3" formControlName="reason"></textarea>
+            </div>
+            <button class="relieve-button" type="submit" [disabled]="isRelieving()">
+              {{ isRelieving() ? 'Relieving...' : 'Relieve Employee' }}
+            </button>
+          </form>
+        }
+      </section>
+    }
   }
 </section>

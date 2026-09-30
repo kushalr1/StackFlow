@@ -62,12 +62,24 @@ h2 {
 }
 
 .details-card,
+.history-card,
 .state-card {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   background: #ffffff;
   box-shadow: 0 8px 24px rgb(15 23 42 / 6%);
 }
+
+.history-card { padding: 1.5rem; }
+.history-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.history-heading > span { border-radius: 999px; background: #eff6ff; padding: 0.3rem 0.65rem; color: #1d4ed8; font-weight: 700; }
+.history-list { display: grid; margin-top: 1rem; }
+.history-item { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-top: 1px solid #e2e8f0; padding: 1rem 0; }
+.history-item p { margin: 0.25rem 0 0; color: #64748b; }
+.history-dates { display: grid; justify-items: end; gap: 0.3rem; color: #64748b; }
+.assignment-state { border-radius: 999px; background: #dcfce7; padding: 0.2rem 0.55rem; color: #166534; font-size: 0.75rem; font-weight: 700; }
+.assignment-state.past { background: #f1f5f9; color: #475569; }
+.empty-history { margin: 1rem 0 0; color: #64748b; }
 
 .profile-summary {
   display: flex;
@@ -182,4 +194,7 @@ dd a:hover {
   .details-grid {
     grid-template-columns: 1fr;
   }
+
+  .history-item { align-items: flex-start; flex-direction: column; }
+  .history-dates { justify-items: start; }
 }

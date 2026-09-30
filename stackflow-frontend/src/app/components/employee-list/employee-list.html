@@ -23,16 +23,22 @@
 
     <div class="filter-field">
       <label for="department-filter">Department</label>
-      <select
-        id="department-filter"
+      <app-dropdown
         [value]="selectedDepartment()"
-        (change)="updateDepartment($event)"
-      >
-        <option value="">All departments</option>
-        @for (department of departments(); track department.id) {
-          <option [value]="department.id">{{ department.name }}</option>
-        }
-      </select>
+        [options]="departmentOptions()"
+        ariaLabel="Filter employees by department"
+        (valueChange)="updateDepartment($event)"
+      />
+    </div>
+
+    <div class="filter-field">
+      <label for="employment-filter">Employment status</label>
+      <app-dropdown
+        [value]="employmentStatus()"
+        [options]="employmentOptions"
+        ariaLabel="Filter employees by employment status"
+        (valueChange)="updateEmploymentStatus($event)"
+      />
     </div>
 
     <button class="filter-button" type="submit">Search</button>
@@ -40,6 +46,12 @@
       Clear
     </button>
   </form>
+
+  @if (employmentStatus()) {
+    <div class="applied-filter" role="status">
+      Showing {{ employmentStatus() === 'active' ? 'active' : 'relieved' }} employees{{ selectedDepartment() ? ' in the selected department' : '' }}.
+    </div>
+  }
 
   @if (isLoading()) {
     <div class="state-card" role="status">Loading employees...</div>
@@ -50,7 +62,7 @@
     </div>
   } @else if (employees().length === 0) {
     <div class="state-card empty-state">
-      @if (searchTerm() || selectedDepartment()) {
+      @if (searchTerm() || selectedDepartment() || employmentStatus()) {
         <h2>No matching employees</h2>
         <p>Try another search or clear the filters to see every employee.</p>
         <button type="button" (click)="clearFilters()">Clear Filters</button>
@@ -92,7 +104,7 @@
                     class="status-badge"
                     [class.inactive]="!employee.isActive"
                   >
-                    {{ employee.isActive ? 'Active' : 'Inactive' }}
+                    {{ employee.isActive ? 'Active' : 'Relieved' }}
                   </span>
                 </td>
                 <td>

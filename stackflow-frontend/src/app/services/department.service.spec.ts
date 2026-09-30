@@ -8,12 +8,13 @@ import { Department } from '../models/department';
 import { DepartmentService } from './department.service';
 
 describe('DepartmentService', () => {
-  const apiUrl = 'http://localhost:5090/api/departments';
+  const apiUrl = '/api/departments';
   const department: Department = {
     id: 1,
     name: 'Engineering',
     description: 'Builds StackFlow',
     employeeCount: 2,
+    relievedEmployeeCount: 1,
   };
   let service: DepartmentService;
   let httpTesting: HttpTestingController;

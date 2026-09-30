@@ -6,7 +6,7 @@ import { Attendance, AttendanceRequest } from '../models/attendance';
 @Injectable({ providedIn: 'root' })
 export class AttendanceService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:5090/api/attendance';
+  private readonly apiUrl = '/api/attendance';
 
   getAttendance(date?: string, employeeId?: number, status?: string): Observable<Attendance[]> {
     let params = new HttpParams();

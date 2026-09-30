@@ -83,6 +83,37 @@ public class EmployeeValidationTests
         Assert.Contains(errors, error => error.ErrorMessage == "Enter a valid email address.");
     }
 
+    [Theory]
+    [InlineData("kushal@gmail.com", true)]
+    [InlineData("kushal@company.com", true)]
+    [InlineData("kushal@yahoo.co.in", true)]
+    [InlineData("kushalgmail.com", false)]
+    [InlineData("kushal@", false)]
+    public void CreateEmployee_Email_MustUseValidFormat(string email, bool expectedValid)
+    {
+        var employee = CreateValidEmployee();
+        employee.Email = email;
+
+        var errors = Validate(employee);
+
+        Assert.Equal(expectedValid, errors.Count == 0);
+    }
+
+    [Theory]
+    [InlineData("+919876543210", true)]
+    [InlineData("+14155552671", true)]
+    [InlineData("9876543210", false)]
+    [InlineData("+91abcdefghij", false)]
+    public void CreateEmployee_Phone_MustUseInternationalFormat(string phone, bool expectedValid)
+    {
+        var employee = CreateValidEmployee();
+        employee.Phone = phone;
+
+        var errors = Validate(employee);
+
+        Assert.Equal(expectedValid, errors.Count == 0);
+    }
+
     [Fact]
     public void CreateEmployee_WithInvalidSalary_IsInvalid()
     {
@@ -102,8 +133,8 @@ public class EmployeeValidationTests
         return new CreateEmployeeDto
         {
             Name = "Kushal Sharma",
-            Email = "kushal@example.com",
-            Phone = "9876543210",
+            Email = "kushal@gmail.com",
+            Phone = "+919876543210",
             DepartmentId = 1,
             JobTitle = "Developer",
             Salary = 75000,
@@ -117,8 +148,8 @@ public class EmployeeValidationTests
         return new UpdateEmployeeDto
         {
             Name = "Kushal Sharma",
-            Email = "kushal@example.com",
-            Phone = "9876543210",
+            Email = "kushal@gmail.com",
+            Phone = "+919876543210",
             DepartmentId = 1,
             JobTitle = "Developer",
             Salary = 75000,

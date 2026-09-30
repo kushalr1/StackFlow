@@ -7,6 +7,6 @@ import { DashboardStats } from '../models/dashboard-stats';
 export class DashboardService {
   private readonly http = inject(HttpClient);
   getStats(): Observable<DashboardStats> {
-    return this.http.get<DashboardStats>('http://localhost:5090/api/dashboard/stats');
+    return this.http.get<DashboardStats>('/api/dashboard/stats');
   }
 }

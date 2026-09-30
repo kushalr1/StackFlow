@@ -1,31 +1,136 @@
 <section class="project-page">
-  <div class="page-heading"><p class="eyebrow">Team delivery</p><h1>Projects</h1><p>Create projects and organize employee assignments.</p></div>
-  @if (errorMessage()) { <div class="feedback error">{{ errorMessage() }}</div> }
-  @if (successMessage()) { <div class="feedback success">{{ successMessage() }}</div> }
-  <form class="project-form" [formGroup]="projectForm" (ngSubmit)="saveProject()">
-    <h2>{{ editingId() === null ? 'Create Project' : 'Edit Project' }}</h2>
-    <div class="form-grid">
-      <div><label>Name</label><input type="text" formControlName="name" maxlength="100" />
-        @if (projectForm.controls.name.touched && projectForm.controls.name.invalid) { <small>Enter at least 2 characters.</small> }</div>
-      <div><label>Status</label><select formControlName="status">@for (status of statuses; track status.value) { <option [value]="status.value">{{ status.label }}</option> }</select></div>
-      <div><label>Start Date</label><input type="date" formControlName="startDate" /></div>
-      <div><label>End Date (optional)</label><input type="date" formControlName="endDate" />
-        @if (projectForm.hasError('invalidDateRange')) { <small>End date cannot be before start date.</small> }</div>
-      <div class="description"><label>Description</label><textarea rows="3" maxlength="500" formControlName="description"></textarea></div>
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">Team delivery</p>
+      <h1>Projects</h1>
+      <p>Track current work, completed project history, and employee assignments.</p>
     </div>
-    <div class="form-actions">@if (editingId() !== null) { <button type="button" class="secondary" (click)="cancelEdit()">Cancel</button> }<button class="primary" type="submit">Save Project</button></div>
-  </form>
-  <div class="toolbar"><label for="project-filter">Filter status</label><select id="project-filter" [formControl]="statusFilter" (change)="load()"><option value="">All statuses</option>@for (status of statuses; track status.value) { <option [value]="status.value">{{ status.label }}</option> }</select></div>
-  @if (isLoading()) { <p>Loading projects...</p> }
-  <div class="project-grid">
-    @for (project of projects(); track project.id) {
-      <article class="project-card">
-        <div class="card-heading"><div><h2>{{ project.name }}</h2><span class="status">{{ project.status }}</span></div><div class="card-actions"><button (click)="edit(project)">Edit</button><button class="danger" [disabled]="busyId() === project.id" (click)="removeProject(project)">Delete</button></div></div>
-        <p>{{ project.description || 'No description' }}</p><p class="dates">{{ project.startDate }} → {{ project.endDate || 'No end date' }}</p>
-        <h3>Assigned Employees ({{ project.employees.length }})</h3>
-        <div class="team">@for (employee of project.employees; track employee.id) { <span>{{ employee.name }} <button aria-label="Remove employee" (click)="unassign(project.id, employee.id)">×</button></span> } @empty { <small>No employees assigned.</small> }</div>
-        <div class="assign"><select (change)="changeAssignment(project.id, $event)"><option value="0">Select employee</option>@for (employee of employees(); track employee.id) { <option [value]="employee.id">{{ employee.name }}</option> }</select><button class="primary" [disabled]="busyId() === project.id" (click)="assign(project)">Assign</button></div>
-      </article>
-    } @empty { @if (!isLoading()) { <p>No projects found.</p> } }
+    <button class="primary" type="button" (click)="openCreate()">Add Project</button>
   </div>
+
+  <nav class="project-tabs" aria-label="Project sections">
+    <button type="button" [class.active]="activeTab() === 'current'" (click)="showTab('current')">
+      Current Projects <span>{{ currentProjects().length }}</span>
+    </button>
+    <button type="button" [class.active]="activeTab() === 'history'" (click)="showTab('history')">
+      Projects History <span>{{ completedProjects().length }}</span>
+    </button>
+    <button type="button" [class.active]="activeTab() === 'form'" (click)="editingId() === null ? openCreate() : showTab('form')">
+      {{ editingId() === null ? 'Create Project' : 'Edit Project' }}
+    </button>
+  </nav>
+
+  @if (errorMessage()) { <div class="feedback error" role="alert">{{ errorMessage() }}</div> }
+  @if (successMessage()) { <div class="feedback success" role="status">{{ successMessage() }}</div> }
+
+  @if (activeTab() === 'form') {
+    <form #projectFormElement class="project-form" [formGroup]="projectForm" (ngSubmit)="saveProject()">
+      <div class="section-heading">
+        <div><p class="eyebrow">Project details</p><h2>{{ editingId() === null ? 'Create Project' : 'Edit Project' }}</h2></div>
+        <button type="button" class="secondary" (click)="cancelEdit()">Back to Projects</button>
+      </div>
+      <div class="form-grid">
+        <div><label>Name</label><input #projectNameInput type="text" formControlName="name" maxlength="100" />
+          @if (projectForm.controls.name.touched && projectForm.controls.name.invalid) { <small>Enter at least 2 characters.</small> }</div>
+        <div><label>Status</label><app-dropdown formControlName="status" [options]="statusOptions" ariaLabel="Select project status" /></div>
+        <div><label>Priority</label><app-dropdown formControlName="priority" [options]="priorityOptions" ariaLabel="Select project priority" /></div>
+        <div><label>Start Date</label><input appDatePicker type="date" formControlName="startDate" /></div>
+        <div><label>Due Date (planned deadline)</label><input appDatePicker type="date" formControlName="dueDate" />
+          @if (projectForm.hasError('invalidDateRange')) { <small>Due date cannot be before start date.</small> }
+          @if (projectForm.hasError('futureActiveProject')) { <small>An active or on-hold project cannot start in the future.</small> }
+        </div>
+        @if (projectForm.controls.status.value === 'Completed') {
+          <div><label>Completed On (actual date)</label><input appDatePicker type="date" formControlName="completedOn" />
+            @if (projectForm.hasError('completedWithoutDate')) { <small>Enter the actual completion date.</small> }
+            @if (projectForm.hasError('futureCompletedProject')) { <small>The actual completion date cannot be in the future.</small> }
+            @if (projectForm.hasError('completionBeforeStart')) { <small>Completion cannot be before the start date.</small> }
+          </div>
+        }
+        <div class="description"><label>Description</label><textarea rows="3" maxlength="500" formControlName="description"></textarea></div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="secondary" (click)="cancelEdit()">Cancel</button>
+        <button class="primary" type="submit">{{ editingId() === null ? 'Create Project' : 'Save Changes' }}</button>
+      </div>
+    </form>
+  } @else {
+    <div class="list-toolbar">
+      <div>
+        <h2>{{ statusFilter() === 'Active' ? 'Active Projects' : activeTab() === 'current' ? 'Current Projects' : 'Completed Project History' }}</h2>
+        <p>{{ activeTab() === 'current' ? 'Planned, active, delayed, and on-hold projects.' : 'Finished projects and their preserved team history.' }}</p>
+      </div>
+      @if (statusFilter()) { <button class="secondary" type="button" (click)="clearStatusFilter()">Show All Current Projects</button> }
+    </div>
+
+    @if (selectedProject(); as project) {
+      <div class="modal-backdrop" role="presentation" (click)="closeDetails()">
+      <article class="project-detail-panel" role="dialog" aria-modal="true" [attr.aria-label]="project.name + ' project details'" (click)="$event.stopPropagation()">
+        <div class="detail-header">
+          <div class="project-title">
+            <p class="eyebrow">Project details</p>
+            <h2>{{ project.name }}</h2>
+            <div class="badges"><span class="status">{{ project.status }}</span><span class="priority" [class.high]="project.priority === 'High'" [class.low]="project.priority === 'Low'">{{ project.priority }} priority</span>@if (project.isDelayed) { <span class="delay">{{ project.status === 'Completed' ? 'Finished' : 'Delayed' }} {{ project.delayDays }}d late</span> }</div>
+          </div>
+          <div class="detail-actions">
+            @if (activeTab() === 'current') { <button class="edit-link" type="button" (click)="edit(project)">Edit project</button> }
+            <button class="modal-close" type="button" aria-label="Close project details" (click)="closeDetails()">×</button>
+          </div>
+        </div>
+
+        <p class="project-description">{{ project.description || 'No description provided.' }}</p>
+
+        <div class="detail-layout">
+          <div>
+            <h3>Timeline</h3>
+            <div class="project-dates">
+              <span><strong>Started</strong>{{ project.startDate }}</span>
+              <span><strong>Due</strong>{{ project.dueDate || 'No deadline' }}</span>
+              @if (project.completedOn) { <span><strong>Completed</strong>{{ project.completedOn }}</span> }
+            </div>
+          </div>
+          <div>
+            <h3>Assigned Team ({{ project.employees.length }})</h3>
+            <div class="team">
+              @for (employee of project.employees; track employee.id) {
+                <span><strong>{{ employee.name }}</strong><small>{{ employee.role }}</small>@if (canManageTeam(project)) { <button [attr.aria-label]="'Remove ' + employee.name" (click)="unassign(project.id, employee.id)">×</button> }</span>
+              } @empty { <small>No employees assigned.</small> }
+            </div>
+          </div>
+        </div>
+
+        @if (canManageTeam(project)) {
+          <div class="assignment-panel">
+            <h3>Assign Employee</h3>
+            <div class="assign">
+              <app-dropdown [value]="assignments.get(project.id) ?? 0" [options]="assignmentOptions(project)" ariaLabel="Select employee to assign" (valueChange)="changeAssignment(project.id, $event)" />
+              <input type="text" maxlength="50" placeholder="Role, e.g. Developer" (input)="changeAssignmentRole(project.id, $event)" />
+              <button class="primary" [disabled]="busyId() === project.id" (click)="assign(project)">Assign</button>
+            </div>
+          </div>
+        }
+        @if (activeTab() === 'current') { <button class="delete-link" type="button" [disabled]="busyId() === project.id" (click)="removeProject(project)">Delete mistaken project</button> }
+      </article>
+      </div>
+    }
+
+    @if (isLoading()) {
+      <p class="empty-state">Loading projects...</p>
+    } @else if (visibleProjects().length === 0) {
+      <p class="empty-state">{{ activeTab() === 'current' ? 'No current projects.' : 'No completed project history yet.' }}</p>
+    } @else {
+      <div class="table-card"><div class="table-scroll"><table>
+        <thead><tr><th>Project</th><th>Status</th><th>Priority</th><th>Due</th><th>Team</th><th>Timing</th><th>Action</th></tr></thead>
+        <tbody>@for (project of visibleProjects(); track project.id) {
+          <tr [class.delayed-row]="project.isDelayed && project.status !== 'Completed'">
+            <td><strong>{{ project.name }}</strong></td><td>{{ project.status }}</td><td>{{ project.priority }}</td><td>{{ project.dueDate || 'No deadline' }}</td><td>{{ project.employees.length }}</td>
+            <td>{{ project.isDelayed ? (project.status === 'Completed' ? 'Finished ' : 'Delayed ') + project.delayDays + 'd late' : 'On schedule' }}</td>
+            <td><div class="row-actions">
+              <button class="view-link" type="button" (click)="toggleDetails(project.id)">View details</button>
+              @if (activeTab() === 'current') { <button class="edit-link" type="button" (click)="edit(project)">Edit</button> }
+            </div></td>
+          </tr>
+        }</tbody>
+      </table></div></div>
+    }
+  }
 </section>

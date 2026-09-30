@@ -140,6 +140,13 @@ namespace stackflow_api.Migrations
                         .HasMaxLength(15)
                         .HasColumnType("character varying(15)");
 
+                    b.Property<DateOnly?>("RelievedDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("RelievingReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<decimal>("Salary")
                         .HasPrecision(12, 2)
                         .HasColumnType("numeric(12,2)");
@@ -158,6 +165,17 @@ namespace stackflow_api.Migrations
 
                     b.Property<int>("ProjectId")
                         .HasColumnType("integer");
+
+                    b.Property<DateOnly?>("AssignedOn")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("RemovedOn")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.HasKey("EmployeeId", "ProjectId");
 
@@ -216,18 +234,26 @@ namespace stackflow_api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<DateOnly?>("CompletedOn")
+                        .HasColumnType("date");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<DateOnly?>("EndDate")
+                    b.Property<DateOnly?>("DueDate")
                         .HasColumnType("date");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<DateOnly>("StartDate")
                         .HasColumnType("date");

@@ -12,7 +12,10 @@ public class LeaveRequestService(AppDbContext dbContext) : ILeaveRequestService
         LeaveStatus? status,
         LeaveType? leaveType)
     {
-        var query = dbContext.LeaveRequests.AsNoTracking().AsQueryable();
+        var query = dbContext.LeaveRequests
+            .AsNoTracking()
+            .Include(request => request.Employee)
+            .AsQueryable();
 
         if (employeeId.HasValue)
         {
@@ -38,15 +41,22 @@ public class LeaveRequestService(AppDbContext dbContext) : ILeaveRequestService
     public async Task<LeaveRequestDto?> GetByIdAsync(int id) =>
         await dbContext.LeaveRequests
             .AsNoTracking()
+            .Include(request => request.Employee)
             .Where(request => request.Id == id)
             .Select(request => ToDto(request))
             .FirstOrDefaultAsync();
 
     public async Task<LeaveSaveResult> CreateAsync(SaveLeaveRequestDto dto)
     {
-        if (!await EmployeeExistsAsync(dto.EmployeeId))
+        var employee = await dbContext.Employees.FindAsync(dto.EmployeeId);
+        if (employee is null)
         {
             return new(LeaveSaveOutcome.EmployeeNotFound);
+        }
+
+        if (!employee.IsActive)
+        {
+            return new(LeaveSaveOutcome.EmployeeInactive);
         }
 
         var request = new LeaveRequest
@@ -75,9 +85,20 @@ public class LeaveRequestService(AppDbContext dbContext) : ILeaveRequestService
             return LeaveSaveOutcome.NotFound;
         }
 
-        if (!await EmployeeExistsAsync(dto.EmployeeId))
+        if (request.Status != LeaveStatus.Pending)
+        {
+            return LeaveSaveOutcome.NotEditable;
+        }
+
+        var employee = await dbContext.Employees.FindAsync(dto.EmployeeId);
+        if (employee is null)
         {
             return LeaveSaveOutcome.EmployeeNotFound;
+        }
+
+        if (!employee.IsActive)
+        {
+            return LeaveSaveOutcome.EmployeeInactive;
         }
 
         request.EmployeeId = dto.EmployeeId;
@@ -97,13 +118,48 @@ public class LeaveRequestService(AppDbContext dbContext) : ILeaveRequestService
             return LeaveSaveOutcome.NotFound;
         }
 
+
+        if (status == LeaveStatus.Approved)
+        {
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var latestDate = today.AddYears(1);
+            if (request.StartDate < today || request.EndDate > latestDate || request.EndDate < request.StartDate)
+            {
+                return LeaveSaveOutcome.InvalidDateRange;
+            }
+
+            var employeeIsActive = await dbContext.Employees
+                .AnyAsync(employee => employee.Id == request.EmployeeId && employee.IsActive);
+            if (!employeeIsActive)
+            {
+                return LeaveSaveOutcome.EmployeeInactive;
+            }
+
+            var hasAttendance = await dbContext.AttendanceRecords.AnyAsync(record =>
+                record.EmployeeId == request.EmployeeId &&
+                record.Date >= request.StartDate &&
+                record.Date <= request.EndDate);
+            if (hasAttendance)
+            {
+                return LeaveSaveOutcome.AttendanceConflict;
+            }
+
+            var hasOverlappingLeave = await dbContext.LeaveRequests.AnyAsync(other =>
+                other.Id != request.Id &&
+                other.EmployeeId == request.EmployeeId &&
+                other.Status == LeaveStatus.Approved &&
+                other.StartDate <= request.EndDate &&
+                other.EndDate >= request.StartDate);
+            if (hasOverlappingLeave)
+            {
+                return LeaveSaveOutcome.OverlappingApprovedLeave;
+            }
+        }
+
         request.Status = status;
         await dbContext.SaveChangesAsync();
         return LeaveSaveOutcome.Saved;
     }
-
-    private Task<bool> EmployeeExistsAsync(int employeeId) =>
-        dbContext.Employees.AnyAsync(employee => employee.Id == employeeId);
 
     private static LeaveRequestDto ToDto(LeaveRequest request) => new()
     {

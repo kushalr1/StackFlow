@@ -31,9 +31,14 @@ public class LeavesController(ILeaveRequestService leaveRequestService) : Contro
     public async Task<ActionResult<LeaveRequestDto>> Create(SaveLeaveRequestDto dto)
     {
         var result = await leaveRequestService.CreateAsync(dto);
-        return result.Outcome == LeaveSaveOutcome.EmployeeNotFound
-            ? NotFound(new { message = "The selected employee was not found." })
-            : CreatedAtAction(nameof(GetById), new { id = result.LeaveRequest!.Id }, result.LeaveRequest);
+        return result.Outcome switch
+        {
+            LeaveSaveOutcome.EmployeeNotFound =>
+                NotFound(new { message = "The selected employee was not found." }),
+            LeaveSaveOutcome.EmployeeInactive =>
+                Conflict(new { message = "A leave request cannot be created for a relieved employee." }),
+            _ => CreatedAtAction(nameof(GetById), new { id = result.LeaveRequest!.Id }, result.LeaveRequest)
+        };
     }
 
     [HttpPut("{id:int}")]
@@ -61,6 +66,16 @@ public class LeavesController(ILeaveRequestService leaveRequestService) : Contro
             NotFound(new { message = $"Leave request with ID {id} was not found." }),
         LeaveSaveOutcome.EmployeeNotFound =>
             NotFound(new { message = "The selected employee was not found." }),
+        LeaveSaveOutcome.EmployeeInactive =>
+            Conflict(new { message = "This action is not available for a relieved employee." }),
+        LeaveSaveOutcome.NotEditable =>
+            Conflict(new { message = "Only pending leave requests can be edited." }),
+        LeaveSaveOutcome.InvalidDateRange =>
+            Conflict(new { message = "This leave cannot be approved because its dates are outside the allowed range. Edit the pending request and enter valid dates first." }),
+        LeaveSaveOutcome.AttendanceConflict =>
+            Conflict(new { message = "This leave cannot be approved because attendance already exists within the requested dates." }),
+        LeaveSaveOutcome.OverlappingApprovedLeave =>
+            Conflict(new { message = "This employee already has approved leave overlapping these dates." }),
         _ => NoContent()
     };
 }

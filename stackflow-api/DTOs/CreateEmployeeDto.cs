@@ -17,7 +17,7 @@ public class CreateEmployeeDto
     public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Phone is required.")]
-    [RegularExpression(@"^\d{10,15}$", ErrorMessage = "Phone must contain 10 to 15 digits.")]
+    [RegularExpression(@"^\+[1-9]\d{7,14}$", ErrorMessage = "Phone must include a country code and 8 to 15 digits.")]
     public string Phone { get; set; } = string.Empty;
 
     [Range(1, int.MaxValue, ErrorMessage = "Department is required.")]

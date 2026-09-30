@@ -23,6 +23,21 @@ public class LeaveRequestTests
     }
 
     [Fact]
+    public void Validation_UnrealisticFutureDate_IsInvalid()
+    {
+        var dto = ValidRequest();
+        dto.StartDate = new DateOnly(3455, 4, 12);
+        dto.EndDate = new DateOnly(3455, 9, 23);
+        var results = new List<ValidationResult>();
+
+        var isValid = Validator.TryValidateObject(dto, new ValidationContext(dto), results, true);
+
+        Assert.False(isValid);
+        Assert.Contains(results, result =>
+            result.MemberNames.Contains(nameof(SaveLeaveRequestDto.StartDate)));
+    }
+
+    [Fact]
     public async Task Create_ValidRequest_Returns201CreatedAndPendingStatus()
     {
         var controller = new LeavesController(new FakeLeaveRequestService());
@@ -65,8 +80,8 @@ public class LeaveRequestTests
     {
         EmployeeId = 1,
         LeaveType = LeaveType.CasualLeave,
-        StartDate = new DateOnly(2026, 9, 17),
-        EndDate = new DateOnly(2026, 9, 18),
+        StartDate = DateOnly.FromDateTime(DateTime.Today).AddDays(1),
+        EndDate = DateOnly.FromDateTime(DateTime.Today).AddDays(2),
         Reason = "Family event"
     };
 

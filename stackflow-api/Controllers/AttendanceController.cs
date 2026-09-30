@@ -34,6 +34,10 @@ public class AttendanceController(IAttendanceService attendanceService) : Contro
         {
             AttendanceSaveOutcome.EmployeeNotFound =>
                 NotFound(new { message = "The selected employee was not found." }),
+            AttendanceSaveOutcome.EmployeeInactive =>
+                Conflict(new { message = "Attendance cannot be recorded for a relieved employee." }),
+            AttendanceSaveOutcome.ApprovedLeave =>
+                Conflict(new { message = "Attendance cannot be recorded because this employee has approved leave on this date." }),
             AttendanceSaveOutcome.Duplicate =>
                 Conflict(new { message = "Attendance already exists for this employee on this date." }),
             _ => CreatedAtAction(nameof(GetById), new { id = result.Attendance!.Id }, result.Attendance)
@@ -50,6 +54,14 @@ public class AttendanceController(IAttendanceService attendanceService) : Contro
                 NotFound(new { message = $"Attendance record with ID {id} was not found." }),
             AttendanceSaveOutcome.EmployeeNotFound =>
                 NotFound(new { message = "The selected employee was not found." }),
+            AttendanceSaveOutcome.EmployeeInactive =>
+                Conflict(new { message = "Attendance cannot be recorded for a relieved employee." }),
+            AttendanceSaveOutcome.ApprovedLeave =>
+                Conflict(new { message = "Attendance cannot be recorded because this employee has approved leave on this date." }),
+            AttendanceSaveOutcome.HistoricalRecordReadOnly =>
+                Conflict(new { message = "Only today's attendance status can be changed. Previous attendance is view-only." }),
+            AttendanceSaveOutcome.RecordIdentityCannotChange =>
+                BadRequest(new { message = "Employee and date cannot be changed while editing attendance. Only the status can be changed." }),
             AttendanceSaveOutcome.Duplicate =>
                 Conflict(new { message = "Attendance already exists for this employee on this date." }),
             _ => NoContent()

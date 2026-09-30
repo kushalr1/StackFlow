@@ -26,8 +26,10 @@ public class DashboardControllerTests
         {
             TotalEmployees = 7,
             ActiveEmployees = 6,
+            RelievedEmployees = 1,
             PresentToday = 5,
             AbsentToday = 1,
+            OnLeaveToday = 1,
             PendingLeaveRequests = 3,
             TotalDepartments = 4,
             ActiveProjects = 2

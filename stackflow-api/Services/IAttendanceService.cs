@@ -18,6 +18,10 @@ public enum AttendanceSaveOutcome
     Saved,
     NotFound,
     EmployeeNotFound,
+    EmployeeInactive,
+    ApprovedLeave,
+    HistoricalRecordReadOnly,
+    RecordIdentityCannotChange,
     Duplicate
 }
 

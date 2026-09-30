@@ -50,12 +50,23 @@ public class AttendanceService(AppDbContext dbContext) : IAttendanceService
 
     public async Task<AttendanceSaveResult> CreateAsync(SaveAttendanceDto attendanceDto)
     {
-        if (!await dbContext.Employees.AnyAsync(employee => employee.Id == attendanceDto.EmployeeId))
+        var employee = await dbContext.Employees.FindAsync(attendanceDto.EmployeeId);
+        if (employee is null)
         {
             return new(AttendanceSaveOutcome.EmployeeNotFound);
         }
 
+        if (!employee.IsActive)
+        {
+            return new(AttendanceSaveOutcome.EmployeeInactive);
+        }
+
         var date = attendanceDto.Date!.Value;
+
+        if (await HasApprovedLeaveAsync(attendanceDto.EmployeeId, date))
+        {
+            return new(AttendanceSaveOutcome.ApprovedLeave);
+        }
 
         if (await IsDuplicateAsync(attendanceDto.EmployeeId, date))
         {
@@ -84,20 +95,41 @@ public class AttendanceService(AppDbContext dbContext) : IAttendanceService
             return new(AttendanceSaveOutcome.NotFound);
         }
 
-        if (!await dbContext.Employees.AnyAsync(employee => employee.Id == attendanceDto.EmployeeId))
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        if (record.Date != today)
+        {
+            return new(AttendanceSaveOutcome.HistoricalRecordReadOnly);
+        }
+
+        if (attendanceDto.EmployeeId != record.EmployeeId || attendanceDto.Date != record.Date)
+        {
+            return new(AttendanceSaveOutcome.RecordIdentityCannotChange);
+        }
+
+        var employee = await dbContext.Employees.FindAsync(attendanceDto.EmployeeId);
+        if (employee is null)
         {
             return new(AttendanceSaveOutcome.EmployeeNotFound);
         }
 
+
+        if (!employee.IsActive)
+        {
+            return new(AttendanceSaveOutcome.EmployeeInactive);
+        }
+
         var date = attendanceDto.Date!.Value;
+
+        if (await HasApprovedLeaveAsync(attendanceDto.EmployeeId, date))
+        {
+            return new(AttendanceSaveOutcome.ApprovedLeave);
+        }
 
         if (await IsDuplicateAsync(attendanceDto.EmployeeId, date, id))
         {
             return new(AttendanceSaveOutcome.Duplicate);
         }
 
-        record.EmployeeId = attendanceDto.EmployeeId;
-        record.Date = date;
         record.Status = attendanceDto.Status;
         await dbContext.SaveChangesAsync();
 
@@ -109,6 +141,13 @@ public class AttendanceService(AppDbContext dbContext) : IAttendanceService
             record.EmployeeId == employeeId &&
             record.Date == date &&
             (!excludedId.HasValue || record.Id != excludedId.Value));
+
+    private Task<bool> HasApprovedLeaveAsync(int employeeId, DateOnly date) =>
+        dbContext.LeaveRequests.AnyAsync(request =>
+            request.EmployeeId == employeeId &&
+            request.Status == LeaveStatus.Approved &&
+            request.StartDate <= date &&
+            request.EndDate >= date);
 
     private static AttendanceDto ToDto(Attendance record) => new()
     {

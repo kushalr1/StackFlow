@@ -12,7 +12,14 @@ public class DepartmentService(AppDbContext dbContext) : IDepartmentService
         return await dbContext.Departments
             .AsNoTracking()
             .OrderBy(department => department.Name)
-            .Select(department => ToDto(department))
+            .Select(department => new DepartmentDto
+            {
+                Id = department.Id,
+                Name = department.Name,
+                Description = department.Description,
+                EmployeeCount = department.Employees.Count(employee => employee.IsActive),
+                RelievedEmployeeCount = department.Employees.Count(employee => !employee.IsActive)
+            })
             .ToListAsync();
     }
 
@@ -21,7 +28,14 @@ public class DepartmentService(AppDbContext dbContext) : IDepartmentService
         return await dbContext.Departments
             .AsNoTracking()
             .Where(department => department.Id == id)
-            .Select(department => ToDto(department))
+            .Select(department => new DepartmentDto
+            {
+                Id = department.Id,
+                Name = department.Name,
+                Description = department.Description,
+                EmployeeCount = department.Employees.Count(employee => employee.IsActive),
+                RelievedEmployeeCount = department.Employees.Count(employee => !employee.IsActive)
+            })
             .FirstOrDefaultAsync();
     }
 
@@ -105,7 +119,8 @@ public class DepartmentService(AppDbContext dbContext) : IDepartmentService
             Id = department.Id,
             Name = department.Name,
             Description = department.Description,
-            EmployeeCount = department.Employees.Count
+            EmployeeCount = department.Employees.Count(employee => employee.IsActive),
+            RelievedEmployeeCount = department.Employees.Count(employee => !employee.IsActive)
         };
     }
 }

@@ -18,47 +18,59 @@
     </div>
   } @else if (stats(); as dashboard) {
     <div class="statistics-grid">
-      <article class="stat-card total-card">
+      <a class="stat-card total-card" routerLink="/employees">
         <p>Total Employees</p>
         <strong>{{ dashboard.totalEmployees }}</strong>
-        <span>Everyone in the directory</span>
-      </article>
+        <span>Active and relieved employees</span>
+      </a>
 
-      <article class="stat-card active-card">
+      <a class="stat-card active-card" routerLink="/employees" [queryParams]="{ isActive: true }">
         <p>Active Employees</p>
         <strong>{{ dashboard.activeEmployees }}</strong>
         <span>Currently active team members</span>
-      </article>
+      </a>
 
-      <article class="stat-card present-card">
+      <a class="stat-card" routerLink="/employees" [queryParams]="{ isActive: false }">
+        <p>Relieved Employees</p>
+        <strong>{{ dashboard.relievedEmployees }}</strong>
+        <span>Former employees with preserved history</span>
+      </a>
+
+      <a class="stat-card present-card" routerLink="/attendance" [queryParams]="{ tab: 'history', date: 'today', status: 'Present' }">
         <p>Present Today</p>
         <strong>{{ dashboard.presentToday }}</strong>
         <span>Employees marked present</span>
-      </article>
+      </a>
 
-      <article class="stat-card absent-card">
+      <a class="stat-card absent-card" routerLink="/attendance" [queryParams]="{ tab: 'history', date: 'today', status: 'Absent' }">
         <p>Absent Today</p>
         <strong>{{ dashboard.absentToday }}</strong>
         <span>Employees marked absent</span>
-      </article>
+      </a>
 
-      <article class="stat-card leave-card">
+      <a class="stat-card leave-card" routerLink="/leaves" [queryParams]="{ tab: 'calendar' }">
+        <p>On Leave Today</p>
+        <strong>{{ dashboard.onLeaveToday }}</strong>
+        <span>Active employees with approved leave</span>
+      </a>
+
+      <a class="stat-card leave-card" routerLink="/leaves" [queryParams]="{ tab: 'pending' }">
         <p>Pending Leaves</p>
         <strong>{{ dashboard.pendingLeaveRequests }}</strong>
         <span>Requests awaiting a decision</span>
-      </article>
+      </a>
 
-      <article class="stat-card department-card">
+      <a class="stat-card department-card" routerLink="/departments">
         <p>Departments</p>
         <strong>{{ dashboard.totalDepartments }}</strong>
         <span>Organization departments</span>
-      </article>
+      </a>
 
-      <article class="stat-card project-card">
+      <a class="stat-card project-card" routerLink="/projects" [queryParams]="{ tab: 'current', status: 'Active' }">
         <p>Active Projects</p>
         <strong>{{ dashboard.activeProjects }}</strong>
         <span>Projects currently active</span>
-      </article>
+      </a>
     </div>
 
     @if (dashboard.totalEmployees === 0) {

@@ -36,19 +36,27 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
             : NoContent();
 
     [HttpDelete("{id:int}")]
-    public async Task<IActionResult> Delete(int id) =>
-        await projectService.DeleteAsync(id) == ProjectSaveOutcome.NotFound
-            ? NotFound(new { message = $"Project with ID {id} was not found." })
-            : NoContent();
+    public async Task<IActionResult> Delete(int id)
+    {
+        var result = await projectService.DeleteAsync(id);
+        return result switch
+        {
+            ProjectSaveOutcome.NotFound => NotFound(new { message = $"Project with ID {id} was not found." }),
+            ProjectSaveOutcome.HasAssignmentHistory => Conflict(new { message = "This project has employee history and cannot be permanently deleted. Mark it as Completed instead." }),
+            _ => NoContent()
+        };
+    }
 
     [HttpPost("{id:int}/employees")]
     public async Task<IActionResult> AssignEmployee(int id, AssignEmployeeDto dto)
     {
-        var result = await projectService.AssignEmployeeAsync(id, dto.EmployeeId);
+        var result = await projectService.AssignEmployeeAsync(id, dto);
         return result switch
         {
             ProjectSaveOutcome.NotFound => NotFound(new { message = $"Project with ID {id} was not found." }),
             ProjectSaveOutcome.EmployeeNotFound => NotFound(new { message = "The selected employee was not found." }),
+            ProjectSaveOutcome.InactiveEmployee => Conflict(new { message = "Relieved employees cannot be assigned to projects." }),
+            ProjectSaveOutcome.TeamLocked => Conflict(new { message = "Team changes are not allowed while a project is On Hold or Completed." }),
             ProjectSaveOutcome.DuplicateAssignment => Conflict(new { message = "This employee is already assigned to the project." }),
             _ => NoContent()
         };
@@ -62,6 +70,7 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
         {
             ProjectSaveOutcome.NotFound => NotFound(new { message = $"Project with ID {id} was not found." }),
             ProjectSaveOutcome.AssignmentNotFound => NotFound(new { message = "This employee is not assigned to the project." }),
+            ProjectSaveOutcome.TeamLocked => Conflict(new { message = "Team changes are not allowed while a project is On Hold or Completed." }),
             _ => NoContent()
         };
     }

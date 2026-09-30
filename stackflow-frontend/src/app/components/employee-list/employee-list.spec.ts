@@ -35,10 +35,10 @@ describe('EmployeeList', () => {
     fixture.detectChanges();
 
     const departmentRequest = httpTesting.expectOne(
-      'http://localhost:5090/api/departments',
+      '/api/departments',
     );
     const employeeRequest = httpTesting.expectOne(
-      'http://localhost:5090/api/employees',
+      '/api/employees',
     );
     expect(departmentRequest.request.method).toBe('GET');
     expect(employeeRequest.request.method).toBe('GET');

@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, HostListener, inject, OnInit, signal } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -9,10 +9,11 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize, Observable } from 'rxjs';
-import { EmployeeRequest } from '../../models/employee';
+import { Employee, EmployeeRequest } from '../../models/employee';
 import { Department } from '../../models/department';
 import { DepartmentService } from '../../services/department.service';
 import { EmployeeService } from '../../services/employee.service';
+import { DatePickerDirective } from '../../directives/date-picker.directive';
 
 function notBlank(control: AbstractControl): ValidationErrors | null {
   const value = control.value;
@@ -34,8 +35,32 @@ function employeeName(control: AbstractControl): ValidationErrors | null {
     : { employeeName: true };
 }
 
+interface PhoneCountry {
+  name: string;
+  code: string;
+  flag: string;
+  digits: number;
+}
+
+const phoneCountries: PhoneCountry[] = [
+  { name: 'India', code: '+91', flag: '🇮🇳', digits: 10 },
+  { name: 'United States / Canada', code: '+1', flag: '🇺🇸', digits: 10 },
+  { name: 'United Kingdom', code: '+44', flag: '🇬🇧', digits: 10 },
+  { name: 'Australia', code: '+61', flag: '🇦🇺', digits: 9 },
+  { name: 'United Arab Emirates', code: '+971', flag: '🇦🇪', digits: 9 },
+];
+
+function countryPhone(control: AbstractControl): ValidationErrors | null {
+  const countryCode = control.get('countryCode')?.value as string;
+  const phone = control.get('phone')?.value as string;
+  const country = phoneCountries.find(option => option.code === countryCode);
+
+  if (!country || !phone) return null;
+  return new RegExp(`^\\d{${country.digits}}$`).test(phone) ? null : { countryPhone: true };
+}
+
 @Component({
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, DatePickerDirective],
   selector: 'app-employee-form',
   styleUrl: './employee-form.css',
   templateUrl: './employee-form.html',
@@ -56,6 +81,13 @@ export class EmployeeForm implements OnInit {
   protected readonly validationMessages = signal<string[]>([]);
   protected readonly departments = signal<Department[]>([]);
   protected readonly departmentError = signal('');
+  protected readonly countryDropdownOpen = signal(false);
+  protected readonly departmentDropdownOpen = signal(false);
+  protected readonly loadedEmployee = signal<Employee | null>(null);
+  protected readonly isRelieving = signal(false);
+  protected readonly reliefError = signal('');
+  protected readonly todayDate = this.today();
+  protected readonly phoneCountries = phoneCountries;
   protected readonly pageTitle = computed(() =>
     this.isEditMode() ? 'Edit Employee' : 'Add Employee',
   );
@@ -72,7 +104,8 @@ export class EmployeeForm implements OnInit {
       ],
     ],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
-    phone: ['', [Validators.required, Validators.pattern(/^\d{10,15}$/)]],
+    countryCode: ['+91', Validators.required],
+    phone: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
     departmentId: [0, Validators.min(1)],
     jobTitle: ['', [Validators.required, notBlank, Validators.maxLength(100)]],
     salary: [
@@ -80,7 +113,11 @@ export class EmployeeForm implements OnInit {
       [Validators.required, Validators.min(0.01), Validators.max(9999999999.99)],
     ],
     dateOfJoining: ['', Validators.required],
-    isActive: [true],
+  }, { validators: countryPhone });
+
+  protected readonly reliefForm = this.formBuilder.nonNullable.group({
+    relievedDate: [this.todayDate, Validators.required],
+    reason: ['', Validators.maxLength(500)],
   });
 
   ngOnInit(): void {
@@ -116,8 +153,13 @@ export class EmployeeForm implements OnInit {
 
     const formValue = this.employeeForm.getRawValue();
     const employee: EmployeeRequest = {
-      ...formValue,
       name: formValue.name.trim(),
+      email: formValue.email.trim().toLowerCase(),
+      phone: `${formValue.countryCode}${formValue.phone}`,
+      departmentId: formValue.departmentId,
+      jobTitle: formValue.jobTitle.trim(),
+      salary: formValue.salary,
+      dateOfJoining: formValue.dateOfJoining,
     };
 
     this.isSubmitting.set(true);
@@ -151,6 +193,78 @@ export class EmployeeForm implements OnInit {
       });
   }
 
+  protected toggleCountryDropdown(event: MouseEvent): void {
+    event.stopPropagation();
+    this.departmentDropdownOpen.set(false);
+    this.countryDropdownOpen.update(open => !open);
+  }
+
+  protected selectCountry(code: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.employeeForm.controls.countryCode.setValue(code);
+    this.employeeForm.controls.countryCode.markAsTouched();
+    this.employeeForm.controls.countryCode.markAsDirty();
+    this.employeeForm.updateValueAndValidity();
+    this.countryDropdownOpen.set(false);
+  }
+
+  protected toggleDepartmentDropdown(event: MouseEvent): void {
+    event.stopPropagation();
+    this.countryDropdownOpen.set(false);
+    this.departmentDropdownOpen.update(open => !open);
+  }
+
+  protected selectDepartment(id: number, event: MouseEvent): void {
+    event.stopPropagation();
+    this.employeeForm.controls.departmentId.setValue(id);
+    this.employeeForm.controls.departmentId.markAsTouched();
+    this.employeeForm.controls.departmentId.markAsDirty();
+    this.departmentDropdownOpen.set(false);
+  }
+
+  protected selectedDepartment(): Department | undefined {
+    return this.departments().find(department => department.id === this.employeeForm.controls.departmentId.value);
+  }
+
+  @HostListener('document:click')
+  protected closeDropdowns(): void {
+    this.countryDropdownOpen.set(false);
+    this.departmentDropdownOpen.set(false);
+  }
+
+  @HostListener('document:keydown.escape')
+  protected closeDropdownsWithEscape(): void {
+    this.closeDropdowns();
+  }
+
+  protected relieveEmployee(): void {
+    const employee = this.loadedEmployee();
+    if (!employee || !employee.isActive || this.employeeId === null || this.reliefForm.invalid) {
+      this.reliefForm.markAllAsTouched();
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Relieve ${employee.name}? Their history will be preserved, but they will be removed from new attendance, leave, and project assignment lists.`,
+    );
+    if (!confirmed) return;
+
+    const value = this.reliefForm.getRawValue();
+    this.reliefError.set('');
+    this.isRelieving.set(true);
+    this.employeeService
+      .relieveEmployee(this.employeeId, {
+        relievedDate: value.relievedDate,
+        reason: value.reason.trim() || null,
+      })
+      .pipe(finalize(() => this.isRelieving.set(false)))
+      .subscribe({
+        next: () => this.router.navigate(['/employees']),
+        error: (error: HttpErrorResponse) =>
+          this.reliefError.set(error.error?.message ?? 'The employee could not be relieved.'),
+      });
+  }
+
   private loadEmployee(id: number): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
@@ -160,15 +274,17 @@ export class EmployeeForm implements OnInit {
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: (employee) => {
+          const parsedPhone = this.parsePhone(employee.phone);
+          this.loadedEmployee.set(employee);
           this.employeeForm.patchValue({
             name: employee.name,
             email: employee.email,
-            phone: employee.phone,
+            countryCode: parsedPhone.countryCode,
+            phone: parsedPhone.phone,
             departmentId: employee.departmentId,
             jobTitle: employee.jobTitle,
             salary: employee.salary,
             dateOfJoining: employee.dateOfJoining,
-            isActive: employee.isActive,
           });
         },
         error: (error: HttpErrorResponse) => {
@@ -195,6 +311,20 @@ export class EmployeeForm implements OnInit {
     });
   }
 
+  protected selectedPhoneCountry(): PhoneCountry | undefined {
+    return this.phoneCountries.find(country => country.code === this.employeeForm.controls.countryCode.value);
+  }
+
+  private parsePhone(phone: string): { countryCode: string; phone: string } {
+    const normalized = phone.replace(/[\s()-]/g, '');
+    const country = [...this.phoneCountries]
+      .sort((first, second) => second.code.length - first.code.length)
+      .find(option => normalized.startsWith(option.code));
+
+    if (country) return { countryCode: country.code, phone: normalized.slice(country.code.length) };
+    return { countryCode: '+91', phone: normalized.replace(/^\+/, '') };
+  }
+
   private getValidationMessages(error: HttpErrorResponse): string[] {
     if (error.status !== 400) {
       return [];
@@ -211,5 +341,12 @@ export class EmployeeForm implements OnInit {
         ? messages.filter((message): message is string => typeof message === 'string')
         : [],
     );
+  }
+
+  private today(): string {
+    const now = new Date();
+    return new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 10);
   }
 }

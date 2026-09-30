@@ -19,7 +19,12 @@ public enum LeaveSaveOutcome
 {
     Saved,
     NotFound,
-    EmployeeNotFound
+    EmployeeNotFound,
+    EmployeeInactive,
+    NotEditable,
+    InvalidDateRange,
+    AttendanceConflict,
+    OverlappingApprovedLeave
 }
 
 public record LeaveSaveResult(LeaveSaveOutcome Outcome, LeaveRequestDto? LeaveRequest = null);

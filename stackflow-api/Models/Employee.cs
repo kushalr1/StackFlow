@@ -22,6 +22,10 @@ public class Employee
 
     public bool IsActive { get; set; } = true;
 
+    public DateOnly? RelievedDate { get; set; }
+
+    public string? RelievingReason { get; set; }
+
     public ICollection<Attendance> AttendanceRecords { get; set; } = [];
 
     public ICollection<LeaveRequest> LeaveRequests { get; set; } = [];

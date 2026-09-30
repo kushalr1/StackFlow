@@ -29,7 +29,7 @@
         <div>
           <h2>{{ employee.name }}</h2>
           <span class="status-badge" [class.inactive]="!employee.isActive">
-            {{ employee.isActive ? 'Active' : 'Inactive' }}
+            {{ employee.isActive ? 'Active' : 'Relieved' }}
           </span>
         </div>
       </div>
@@ -65,9 +65,55 @@
         </div>
         <div>
           <dt>Status</dt>
-          <dd>{{ employee.isActive ? 'Active employee' : 'Inactive employee' }}</dd>
+          <dd>{{ employee.isActive ? 'Active employee' : 'Relieved employee' }}</dd>
         </div>
+        @if (!employee.isActive) {
+          <div>
+            <dt>Relieved Date</dt>
+            <dd>{{ employee.relievedDate | date: 'longDate' }}</dd>
+          </div>
+          <div>
+            <dt>Relieving Reason</dt>
+            <dd>{{ employee.relievingReason || 'Not provided' }}</dd>
+          </div>
+        }
       </dl>
+    </article>
+
+    <article class="history-card">
+      <div class="history-heading">
+        <div>
+          <p class="eyebrow">Work history</p>
+          <h2>Project Assignments</h2>
+        </div>
+        <span>{{ employee.projectHistory.length }} total</span>
+      </div>
+
+      @if (employee.projectHistory.length === 0) {
+        <p class="empty-history">This employee has not been assigned to a project.</p>
+      } @else {
+        <div class="history-list">
+          @for (assignment of employee.projectHistory; track assignment.projectId) {
+            <div class="history-item">
+              <div>
+                <strong>{{ assignment.projectName }}</strong>
+                <p>{{ assignment.role }}</p>
+              </div>
+              <div class="history-dates">
+                <span class="assignment-state" [class.past]="!assignment.isCurrent">
+                  {{ assignment.isCurrent ? 'Current' : 'Past' }}
+                </span>
+                <small>
+                  {{ assignment.assignedOn ? (assignment.assignedOn | date: 'mediumDate') : 'Earlier assignment' }}
+                  →
+                  {{ assignment.removedOn ? (assignment.removedOn | date: 'mediumDate') : 'Present' }}
+                </small>
+                <small>Project status: {{ assignment.projectStatus }}</small>
+              </div>
+            </div>
+          }
+        </div>
+      }
     </article>
   }
 </section>

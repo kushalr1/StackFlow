@@ -19,7 +19,7 @@ describe('AttendanceService', () => {
     service.getAttendance('2026-09-17', 2, 'Present').subscribe();
 
     const request = http.expectOne(
-      'http://localhost:5090/api/attendance?date=2026-09-17&employeeId=2&status=Present',
+      '/api/attendance?date=2026-09-17&employeeId=2&status=Present',
     );
     expect(request.request.method).toBe('GET');
     request.flush([]);
@@ -29,7 +29,7 @@ describe('AttendanceService', () => {
     const attendance = { employeeId: 2, date: '2026-09-17', status: 'Present' as const };
     service.createAttendance(attendance).subscribe();
 
-    const request = http.expectOne('http://localhost:5090/api/attendance');
+    const request = http.expectOne('/api/attendance');
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual(attendance);
     request.flush({ id: 1, employeeName: 'Kushal', ...attendance });

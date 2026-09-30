@@ -9,9 +9,10 @@ describe('DashboardService', () => {
     const service = TestBed.inject(DashboardService);
     const http = TestBed.inject(HttpTestingController);
     service.getStats().subscribe();
-    const request = http.expectOne('http://localhost:5090/api/dashboard/stats');
+    const request = http.expectOne('/api/dashboard/stats');
     expect(request.request.method).toBe('GET');
-    request.flush({ totalEmployees: 7, activeEmployees: 7, presentToday: 0, absentToday: 0,
+    request.flush({ totalEmployees: 7, activeEmployees: 7, relievedEmployees: 0,
+      presentToday: 0, absentToday: 0, onLeaveToday: 0,
       pendingLeaveRequests: 0, totalDepartments: 6, activeProjects: 1 });
     http.verify();
   });

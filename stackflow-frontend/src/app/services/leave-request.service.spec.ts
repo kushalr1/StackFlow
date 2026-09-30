@@ -18,7 +18,7 @@ describe('LeaveRequestService', () => {
   it('sends leave filters', () => {
     service.getLeaveRequests(2, 'Pending', 'SickLeave').subscribe();
     const request = http.expectOne(
-      'http://localhost:5090/api/leaves?employeeId=2&status=Pending&leaveType=SickLeave',
+      '/api/leaves?employeeId=2&status=Pending&leaveType=SickLeave',
     );
     expect(request.request.method).toBe('GET');
     request.flush([]);
@@ -26,7 +26,7 @@ describe('LeaveRequestService', () => {
 
   it('approves a leave request through the status endpoint', () => {
     service.updateStatus(4, 'Approved').subscribe();
-    const request = http.expectOne('http://localhost:5090/api/leaves/4/status');
+    const request = http.expectOne('/api/leaves/4/status');
     expect(request.request.method).toBe('PATCH');
     expect(request.request.body).toEqual({ status: 'Approved' });
     request.flush(null);

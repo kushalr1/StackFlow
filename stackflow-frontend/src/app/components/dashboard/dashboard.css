@@ -68,9 +68,16 @@ h1 {
 .stat-card {
   border-top: 4px solid #2563eb;
   padding: 1.25rem;
+  color: inherit;
+  text-decoration: none;
   transition:
     box-shadow 160ms ease,
     transform 160ms ease;
+}
+
+.stat-card:focus-visible {
+  outline: 3px solid rgb(37 99 235 / 25%);
+  outline-offset: 3px;
 }
 
 .stat-card:hover {

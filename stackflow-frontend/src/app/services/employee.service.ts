@@ -1,16 +1,16 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { Employee, EmployeeRequest } from '../models/employee';
+import { Employee, EmployeeRequest, RelieveEmployeeRequest } from '../models/employee';
 
 @Injectable({
   providedIn: 'root',
 })
 export class EmployeeService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:5090/api/employees';
+  private readonly apiUrl = '/api/employees';
 
-  getEmployees(search?: string, departmentId?: number): Observable<Employee[]> {
+  getEmployees(search?: string, departmentId?: number, isActive?: boolean): Observable<Employee[]> {
     let params = new HttpParams();
 
     if (search?.trim()) {
@@ -19,6 +19,10 @@ export class EmployeeService {
 
     if (departmentId) {
       params = params.set('departmentId', departmentId);
+    }
+
+    if (isActive !== undefined) {
+      params = params.set('isActive', isActive);
     }
 
     return this.http.get<Employee[]>(this.apiUrl, { params });
@@ -34,6 +38,10 @@ export class EmployeeService {
 
   updateEmployee(id: number, employee: EmployeeRequest): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/${id}`, employee);
+  }
+
+  relieveEmployee(id: number, request: RelieveEmployeeRequest): Observable<void> {
+    return this.http.patch<void>(`${this.apiUrl}/${id}/relieve`, request);
   }
 
   deleteEmployee(id: number): Observable<void> {

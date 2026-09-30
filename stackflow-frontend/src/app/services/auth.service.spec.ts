@@ -29,7 +29,7 @@ describe('AuthService', () => {
     const token = `header.${payload}.signature`;
 
     service.login({ email: 'admin@stackflow.local', password: 'password' }).subscribe();
-    const request = httpTesting.expectOne('http://localhost:5090/api/auth/login');
+    const request = httpTesting.expectOne('/api/auth/login');
     expect(request.request.method).toBe('POST');
     request.flush({ token, expiresAt: new Date(Date.now() + 3600000).toISOString(), email: 'admin@stackflow.local' });
 

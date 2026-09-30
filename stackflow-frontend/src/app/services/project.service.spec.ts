@@ -13,12 +13,13 @@ describe('ProjectService', () => {
   afterEach(() => http.verify());
   it('filters projects by status', () => {
     service.getProjects('Active').subscribe();
-    const request = http.expectOne('http://localhost:5090/api/projects?status=Active');
+    const request = http.expectOne('/api/projects?status=Active');
     expect(request.request.method).toBe('GET'); request.flush([]);
   });
   it('assigns an employee', () => {
-    service.assignEmployee(3, 7).subscribe();
-    const request = http.expectOne('http://localhost:5090/api/projects/3/employees');
-    expect(request.request.body).toEqual({ employeeId: 7 }); request.flush(null);
+    const body = { employeeId: 7, role: 'Developer' };
+    service.assignEmployee(3, body).subscribe();
+    const request = http.expectOne('/api/projects/3/employees');
+    expect(request.request.body).toEqual(body); request.flush(null);
   });
 });

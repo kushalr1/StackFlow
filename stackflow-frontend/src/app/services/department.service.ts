@@ -6,7 +6,7 @@ import { Department, DepartmentRequest } from '../models/department';
 @Injectable({ providedIn: 'root' })
 export class DepartmentService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:5090/api/departments';
+  private readonly apiUrl = '/api/departments';
 
   getDepartments(): Observable<Department[]> {
     return this.http.get<Department[]>(this.apiUrl);

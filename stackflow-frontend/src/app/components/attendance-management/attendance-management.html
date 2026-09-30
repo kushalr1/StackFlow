@@ -2,75 +2,83 @@
   <div class="page-heading">
     <p class="eyebrow">Daily workforce</p>
     <h1>Attendance</h1>
-    <p>Record and review one attendance status per employee each day.</p>
+    <p>Record daily attendance and review the complete history of active and relieved employees.</p>
+  </div>
+
+  <div class="attendance-tabs" role="tablist" aria-label="Attendance sections">
+    <button type="button" role="tab" [class.active]="activeTab() === 'mark'" [attr.aria-selected]="activeTab() === 'mark'" (click)="selectTab('mark')">
+      <span>Mark Attendance</span><small>Active employees only</small>
+    </button>
+    <button type="button" role="tab" [class.active]="activeTab() === 'history'" [attr.aria-selected]="activeTab() === 'history'" (click)="selectTab('history')">
+      <span>Attendance History</span><small>Active and relieved employees</small>
+    </button>
   </div>
 
   @if (errorMessage()) { <div class="feedback error" role="alert">{{ errorMessage() }}</div> }
   @if (successMessage()) { <div class="feedback success" role="status">{{ successMessage() }}</div> }
 
-  <div class="attendance-layout">
-    <form class="record-form" [formGroup]="attendanceForm" (ngSubmit)="saveAttendance()" novalidate>
-      <h2>{{ editingId() === null ? 'Mark Attendance' : 'Edit Attendance' }}</h2>
-
-      <label for="employee">Employee</label>
-      <select id="employee" formControlName="employeeId">
-        <option [ngValue]="0">Select employee</option>
-        @for (employee of employees(); track employee.id) {
-          <option [ngValue]="employee.id">{{ employee.name }}</option>
-        }
-      </select>
-      @if (attendanceForm.controls.employeeId.touched && attendanceForm.controls.employeeId.invalid) {
-        <small class="validation-error">Employee is required.</small>
-      }
-
-      <label for="attendance-date">Date</label>
-      <input id="attendance-date" type="date" formControlName="date" />
-
-      <label for="attendance-status">Status</label>
-      <select id="attendance-status" formControlName="status">
-        @for (status of statuses; track status.value) {
-          <option [value]="status.value">{{ status.label }}</option>
-        }
-      </select>
-
-      <div class="form-actions">
-        @if (editingId() !== null) { <button class="secondary" type="button" (click)="cancelEdit()">Cancel</button> }
-        <button class="primary" type="submit" [disabled]="isSaving()">
-          {{ isSaving() ? 'Saving...' : editingId() === null ? 'Save Attendance' : 'Update Attendance' }}
-        </button>
-      </div>
-    </form>
-
-    <div class="records-card">
+  @if (activeTab() === 'mark') {
+    <div class="tab-panel" role="tabpanel">
+      <form class="record-form" [formGroup]="attendanceForm" (ngSubmit)="saveAttendance()" novalidate>
+        <div class="card-heading">
+          <div><p class="section-label">Daily entry</p><h2>{{ editingId() === null ? 'Mark Attendance' : 'Edit Attendance' }}</h2><p>Relieved employees are automatically excluded.</p></div>
+        </div>
+        <div class="entry-grid">
+          <div class="field">
+            <label for="employee">Employee</label>
+            <app-dropdown formControlName="employeeId" [options]="activeEmployeeOptions()" ariaLabel="Select active employee" />
+            @if (attendanceForm.controls.employeeId.touched && attendanceForm.controls.employeeId.invalid) { <small class="validation-error">Employee is required.</small> }
+          </div>
+          <div class="field"><label for="attendance-date">Date</label><input appDatePicker id="attendance-date" type="date" formControlName="date" /></div>
+          <div class="field">
+            <label for="attendance-status">Status</label>
+            <app-dropdown formControlName="status" [options]="attendanceStatusOptions" ariaLabel="Select attendance status" />
+          </div>
+        </div>
+        <div class="form-actions">
+          @if (editingId() !== null) { <button class="secondary" type="button" (click)="cancelEdit()">Cancel</button> }
+          <button class="primary" type="submit" [disabled]="isSaving()">{{ isSaving() ? 'Saving...' : editingId() === null ? 'Save Attendance' : 'Update Attendance' }}</button>
+        </div>
+      </form>
+    </div>
+  } @else {
+    <div class="records-card tab-panel" role="tabpanel">
+      <div class="card-heading"><div><p class="section-label">Historical records</p><h2>Attendance History</h2><p>Search records without losing access to relieved employees.</p></div></div>
       <form class="filters" [formGroup]="filterForm" (ngSubmit)="applyFilters()">
-        <input type="date" aria-label="Filter by date" formControlName="date" />
-        <select aria-label="Filter by employee" formControlName="employeeId">
-          <option [ngValue]="0">All employees</option>
-          @for (employee of employees(); track employee.id) { <option [ngValue]="employee.id">{{ employee.name }}</option> }
-        </select>
-        <select aria-label="Filter by status" formControlName="status">
-          <option value="">All statuses</option>
-          @for (status of statuses; track status.value) { <option [value]="status.value">{{ status.label }}</option> }
-        </select>
-        <button class="primary" type="submit">Filter</button>
-        <button class="secondary" type="button" (click)="clearFilters()">Clear</button>
+        <div class="field"><label for="history-date">Date</label><input appDatePicker id="history-date" type="date" formControlName="date" /></div>
+        <div class="field">
+          <label for="history-employee">Employee</label>
+          <app-dropdown formControlName="employeeId" [options]="historyEmployeeOptions()" ariaLabel="Filter attendance by employee" />
+        </div>
+        <div class="field">
+          <label for="history-status">Attendance status</label>
+          <app-dropdown formControlName="status" [options]="historyStatusOptions" ariaLabel="Filter attendance by status" />
+        </div>
+        <div class="field">
+          <label for="history-sort">Arrange by</label>
+          <app-dropdown formControlName="sortOrder" [options]="sortOptions" ariaLabel="Arrange attendance history" />
+        </div>
+        <div class="filter-actions"><button class="primary" type="submit">Apply Filters</button><button class="secondary" type="button" (click)="clearFilters()">Clear</button></div>
       </form>
 
       @if (isLoading()) {
-        <p class="state-message">Loading attendance...</p>
-      } @else if (records().length === 0) {
-        <p class="state-message">No attendance records found.</p>
+        <p class="state-message">Loading attendance history...</p>
+      } @else if (displayedRecords().length === 0) {
+        <p class="state-message">No attendance records found for these filters.</p>
       } @else {
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Date</th><th>Employee</th><th>Status</th><th>Action</th></tr></thead>
+            <thead><tr><th>Date</th><th>Employee</th><th>Employment</th><th>Attendance</th><th>Action</th></tr></thead>
             <tbody>
-              @for (record of records(); track record.id) {
+              @for (record of displayedRecords(); track record.id) {
                 <tr>
-                  <td>{{ record.date }}</td>
-                  <td><strong>{{ record.employeeName }}</strong></td>
+                  <td>{{ record.date }}</td><td><strong>{{ record.employeeName }}</strong></td>
+                  <td><span class="employment-status" [class.relieved]="!isEmployeeActive(record.employeeId)">{{ isEmployeeActive(record.employeeId) ? 'Active' : 'Relieved' }}</span></td>
                   <td><span class="status" [class]="'status ' + statusClass(record.status)">{{ record.status }}</span></td>
-                  <td><button class="edit-button" type="button" (click)="editAttendance(record)">Edit</button></td>
+                  <td>
+                    @if (isEmployeeActive(record.employeeId) && isToday(record.date)) { <button class="edit-button" type="button" (click)="editAttendance(record)">Edit Status</button> }
+                    @else { <span class="history-only">History only</span> }
+                  </td>
                 </tr>
               }
             </tbody>
@@ -78,5 +86,5 @@
         </div>
       }
     </div>
-  </div>
+  }
 </section>

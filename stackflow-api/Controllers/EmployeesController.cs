@@ -13,9 +13,10 @@ public class EmployeesController(IEmployeeService employeeService) : ControllerB
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<EmployeeDto>>> GetAll(
         [FromQuery] string? search,
-        [FromQuery] int? departmentId)
+        [FromQuery] int? departmentId,
+        [FromQuery] bool? isActive = null)
     {
-        var employees = await employeeService.GetAllAsync(search, departmentId);
+        var employees = await employeeService.GetAllAsync(search, departmentId, isActive);
         return Ok(employees);
     }
 
@@ -87,13 +88,44 @@ public class EmployeesController(IEmployeeService employeeService) : ControllerB
             return BadRequest(new { message = "Employee ID must be greater than 0." });
         }
 
-        var wasDeleted = await employeeService.DeleteAsync(id);
+        var result = await employeeService.DeleteAsync(id);
 
-        if (!wasDeleted)
+        if (result == EmployeeDeleteResult.NotFound)
         {
             return NotFound(new { message = $"Employee with ID {id} was not found." });
         }
 
+        if (result == EmployeeDeleteResult.HasRelatedRecords)
+        {
+            return Conflict(new
+            {
+                message = "This employee cannot be deleted because attendance, leave, or project history exists. Relieve the employee instead."
+            });
+        }
+
         return NoContent();
+    }
+
+    [HttpPatch("{id:int}/relieve")]
+    public async Task<IActionResult> Relieve(int id, RelieveEmployeeDto dto)
+    {
+        if (id <= 0)
+        {
+            return BadRequest(new { message = "Employee ID must be greater than 0." });
+        }
+
+        var result = await employeeService.RelieveAsync(id, dto);
+        return result switch
+        {
+            EmployeeRelieveResult.NotFound =>
+                NotFound(new { message = $"Employee with ID {id} was not found." }),
+            EmployeeRelieveResult.AlreadyRelieved =>
+                Conflict(new { message = "This employee has already been relieved." }),
+            EmployeeRelieveResult.BeforeJoiningDate =>
+                BadRequest(new { message = "Relieved date cannot be before the joining date." }),
+            EmployeeRelieveResult.FutureDate =>
+                BadRequest(new { message = "Relieved date cannot be in the future." }),
+            _ => NoContent()
+        };
     }
 }

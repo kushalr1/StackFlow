@@ -90,6 +90,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         employee.Property(e => e.IsActive)
             .HasDefaultValue(true);
 
+        employee.Property(e => e.RelievedDate)
+            .HasColumnType("date");
+
+        employee.Property(e => e.RelievingReason)
+            .HasMaxLength(500);
+
         var attendance = modelBuilder.Entity<Attendance>();
 
         attendance.ToTable("Attendance");
@@ -144,12 +150,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         project.Property(item => item.Name).IsRequired().HasMaxLength(100);
         project.Property(item => item.Description).HasMaxLength(500);
         project.Property(item => item.StartDate).HasColumnType("date");
-        project.Property(item => item.EndDate).HasColumnType("date");
+        project.Property(item => item.DueDate).HasColumnType("date");
+        project.Property(item => item.CompletedOn).HasColumnType("date");
         project.Property(item => item.Status).HasConversion<string>().HasMaxLength(20);
+        project.Property(item => item.Priority).HasConversion<string>().HasMaxLength(20);
 
         var employeeProject = modelBuilder.Entity<EmployeeProject>();
         employeeProject.ToTable("EmployeeProjects");
         employeeProject.HasKey(link => new { link.EmployeeId, link.ProjectId });
+        employeeProject.Property(link => link.Role).IsRequired().HasMaxLength(50);
+        employeeProject.Property(link => link.AssignedOn).HasColumnType("date");
+        employeeProject.Property(link => link.RemovedOn).HasColumnType("date");
         employeeProject.HasOne(link => link.Employee)
             .WithMany(employee => employee.EmployeeProjects)
             .HasForeignKey(link => link.EmployeeId)

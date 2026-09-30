@@ -9,7 +9,8 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
 {
     public async Task<IReadOnlyList<EmployeeDto>> GetAllAsync(
         string? search,
-        int? departmentId)
+        int? departmentId,
+        bool? isActive)
     {
         var query = dbContext.Employees
             .AsNoTracking()
@@ -31,6 +32,11 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
             query = query.Where(employee => employee.DepartmentId == departmentId.Value);
         }
 
+        if (isActive.HasValue)
+        {
+            query = query.Where(employee => employee.IsActive == isActive.Value);
+        }
+
         return await query
             .OrderBy(employee => employee.Name)
             .Select(employee => ToDto(employee))
@@ -42,6 +48,8 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
         return await dbContext.Employees
             .AsNoTracking()
             .Include(employee => employee.Department)
+            .Include(employee => employee.EmployeeProjects)
+                .ThenInclude(link => link.Project)
             .Where(employee => employee.Id == id)
             .Select(employee => ToDto(employee))
             .FirstOrDefaultAsync();
@@ -66,7 +74,7 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
             JobTitle = employeeDto.JobTitle.Trim(),
             Salary = employeeDto.Salary,
             DateOfJoining = GetRequiredJoiningDate(employeeDto.DateOfJoining),
-            IsActive = employeeDto.IsActive
+            IsActive = true
         };
 
         dbContext.Employees.Add(employee);
@@ -101,24 +109,75 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
         employee.JobTitle = employeeDto.JobTitle.Trim();
         employee.Salary = employeeDto.Salary;
         employee.DateOfJoining = GetRequiredJoiningDate(employeeDto.DateOfJoining);
-        employee.IsActive = employeeDto.IsActive;
 
         await dbContext.SaveChangesAsync();
         return EmployeeUpdateResult.Updated;
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<EmployeeRelieveResult> RelieveAsync(int id, RelieveEmployeeDto dto)
     {
         var employee = await dbContext.Employees.FindAsync(id);
 
         if (employee is null)
         {
-            return false;
+            return EmployeeRelieveResult.NotFound;
+        }
+
+        if (!employee.IsActive)
+        {
+            return EmployeeRelieveResult.AlreadyRelieved;
+        }
+
+        var relievedDate = dto.RelievedDate!.Value;
+        if (relievedDate > DateOnly.FromDateTime(DateTime.Today))
+        {
+            return EmployeeRelieveResult.FutureDate;
+        }
+
+        if (relievedDate < employee.DateOfJoining)
+        {
+            return EmployeeRelieveResult.BeforeJoiningDate;
+        }
+
+        employee.IsActive = false;
+        employee.RelievedDate = relievedDate;
+        employee.RelievingReason = string.IsNullOrWhiteSpace(dto.Reason)
+            ? null
+            : dto.Reason.Trim();
+
+        await dbContext.EmployeeProjects
+            .Where(link => link.EmployeeId == id && link.RemovedOn == null)
+            .ExecuteUpdateAsync(update => update
+                .SetProperty(link => link.RemovedOn, relievedDate));
+
+        await dbContext.SaveChangesAsync();
+        return EmployeeRelieveResult.Relieved;
+    }
+
+    public async Task<EmployeeDeleteResult> DeleteAsync(int id)
+    {
+        var employee = await dbContext.Employees.FindAsync(id);
+
+        if (employee is null)
+        {
+            return EmployeeDeleteResult.NotFound;
+        }
+
+        var hasRelatedRecords = await dbContext.AttendanceRecords
+            .AnyAsync(record => record.EmployeeId == id) ||
+            await dbContext.LeaveRequests
+                .AnyAsync(request => request.EmployeeId == id) ||
+            await dbContext.EmployeeProjects
+                .AnyAsync(link => link.EmployeeId == id);
+
+        if (hasRelatedRecords)
+        {
+            return EmployeeDeleteResult.HasRelatedRecords;
         }
 
         dbContext.Employees.Remove(employee);
         await dbContext.SaveChangesAsync();
-        return true;
+        return EmployeeDeleteResult.Deleted;
     }
 
     private static DateOnly GetRequiredJoiningDate(DateOnly? dateOfJoining)
@@ -140,7 +199,25 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
             JobTitle = employee.JobTitle,
             Salary = employee.Salary,
             DateOfJoining = employee.DateOfJoining,
-            IsActive = employee.IsActive
+            IsActive = employee.IsActive,
+            RelievedDate = employee.RelievedDate,
+            RelievingReason = employee.RelievingReason,
+            ProjectHistory = employee.EmployeeProjects
+                .OrderByDescending(link => link.RemovedOn == null)
+                .ThenByDescending(link => link.AssignedOn)
+                .Select(link => new EmployeeProjectHistoryDto
+                {
+                    ProjectId = link.ProjectId,
+                    ProjectName = link.Project.Name,
+                    ProjectStatus = link.Project.Status == ProjectStatus.OnHold
+                        ? "On Hold"
+                        : link.Project.Status.ToString(),
+                    Role = link.Role,
+                    AssignedOn = link.AssignedOn,
+                    RemovedOn = link.RemovedOn,
+                    IsCurrent = link.RemovedOn == null
+                })
+                .ToList()
         };
     }
 }

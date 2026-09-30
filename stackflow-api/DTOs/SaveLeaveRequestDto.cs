@@ -24,6 +24,25 @@ public class SaveLeaveRequestDto : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        var earliestAllowedDate = DateOnly.FromDateTime(DateTime.Today);
+        var latestAllowedDate = earliestAllowedDate.AddYears(1);
+
+        if (StartDate.HasValue &&
+            (StartDate.Value < earliestAllowedDate || StartDate.Value > latestAllowedDate))
+        {
+            yield return new ValidationResult(
+                $"Start date must be between {earliestAllowedDate:yyyy-MM-dd} and {latestAllowedDate:yyyy-MM-dd}.",
+                [nameof(StartDate)]);
+        }
+
+        if (EndDate.HasValue &&
+            (EndDate.Value < earliestAllowedDate || EndDate.Value > latestAllowedDate))
+        {
+            yield return new ValidationResult(
+                $"End date must be between {earliestAllowedDate:yyyy-MM-dd} and {latestAllowedDate:yyyy-MM-dd}.",
+                [nameof(EndDate)]);
+        }
+
         if (StartDate.HasValue && EndDate.HasValue && EndDate.Value < StartDate.Value)
         {
             yield return new ValidationResult(

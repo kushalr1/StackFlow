@@ -46,12 +46,21 @@
       } @else {
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Name</th><th>Employees</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Name</th><th>Active Employees</th><th>Actions</th></tr></thead>
             <tbody>
               @for (department of departments(); track department.id) {
                 <tr>
                   <td><strong>{{ department.name }}</strong><small>{{ department.description || 'No description' }}</small></td>
-                  <td>{{ department.employeeCount }}</td>
+                  <td>
+                    <a
+                      class="employee-count-link"
+                      routerLink="/employees"
+                      [queryParams]="{ departmentId: department.id, isActive: true }"
+                    >
+                      {{ department.employeeCount }} {{ department.employeeCount === 1 ? 'employee' : 'employees' }}
+                    </a>
+                    <small>{{ department.relievedEmployeeCount }} relieved in history</small>
+                  </td>
                   <td>
                     <div class="actions">
                       <button type="button" (click)="editDepartment(department)">Edit</button>

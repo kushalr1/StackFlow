@@ -23,7 +23,7 @@ describe('DepartmentManagement', () => {
 
   it('should load departments on initialization', () => {
     fixture.detectChanges();
-    const request = httpTesting.expectOne('http://localhost:5090/api/departments');
+    const request = httpTesting.expectOne('/api/departments');
     expect(request.request.method).toBe('GET');
     request.flush([]);
     expect(fixture.componentInstance).toBeTruthy();
