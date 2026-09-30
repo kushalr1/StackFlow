@@ -45,3 +45,9 @@ coverage-*/
 
 # Private documentation
 docs/mentor.md
+
+# VS Code local settings
+.vscode/
+
+# Generated JavaScript files inside Angular components
+stackflow-frontend/src/app/components/**/*.js
