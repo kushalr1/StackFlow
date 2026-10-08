@@ -1,0 +1,34 @@
+<header><p class="eyebrow">MY WORK</p><h1>My Projects</h1><p>Review your assignments and project history.</p></header>
+<div class="tabs" aria-label="Project sections">
+  <button type="button" [class.active]="!history()" (click)="history.set(false)">Current Projects</button>
+  <button type="button" [class.active]="history()" (click)="history.set(true)">Project History</button>
+</div>
+@if (error()) { <p role="alert" class="error">{{ error() }}</p> }
+<section class="panel">
+  @if (loading()) { <p>Loading your projects…</p> }
+  @else if (!error() && displayed().length === 0) { <p>No projects found in this section.</p> }
+  @else if (!error()) {
+    <div class="table-wrap"><table>
+      <thead><tr><th>Project</th><th>My Role</th><th>Status</th><th>Priority</th><th>Due Date</th><th></th></tr></thead>
+      <tbody>@for (project of displayed(); track project.id) {
+        <tr><td><strong>{{ project.name }}</strong></td><td>{{ project.role }}</td>
+          <td><span class="badge" [class.delayed]="delayed(project)">{{ project.removedOn ? 'Assignment ended' : delayed(project) ? 'Delayed' : project.status }}</span></td>
+          <td>{{ project.priority }}</td><td>{{ project.dueDate ? (project.dueDate | date:'dd MMM yyyy') : 'No deadline' }}</td>
+          <td><button type="button" class="link" (click)="selected.set(project)">View details</button></td></tr>
+      }</tbody>
+    </table></div>
+  }
+</section>
+@if (selected(); as project) {
+  <dialog open aria-labelledby="project-title" (keydown.escape)="selected.set(null)">
+    <div class="modal-head"><h2 id="project-title">{{ project.name }}</h2><button type="button" autofocus (click)="selected.set(null)" aria-label="Close project details">Close</button></div>
+    <p class="description">{{ project.description || 'No description provided.' }}</p>
+    <dl><dt>My role</dt><dd>{{ project.role }}</dd><dt>Project status</dt><dd>{{ project.status }}</dd>
+      <dt>Priority</dt><dd>{{ project.priority }}</dd><dt>Start date</dt><dd>{{ project.startDate | date:'dd MMM yyyy' }}</dd>
+      <dt>Due date</dt><dd>{{ project.dueDate ? (project.dueDate | date:'dd MMM yyyy') : 'No deadline' }}</dd>
+      <dt>Assigned on</dt><dd>{{ project.assignedOn ? (project.assignedOn | date:'dd MMM yyyy') : 'Not recorded' }}</dd>
+      @if (project.completedOn) { <dt>Completed on</dt><dd>{{ project.completedOn | date:'dd MMM yyyy' }}</dd> }
+      @if (project.removedOn) { <dt>Assignment ended</dt><dd>{{ project.removedOn | date:'dd MMM yyyy' }}</dd> }
+    </dl>
+  </dialog><div class="backdrop" (click)="selected.set(null)"></div>
+}

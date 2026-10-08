@@ -43,7 +43,7 @@
     </div>
   } @else {
     <div class="records-card tab-panel" role="tabpanel">
-      <div class="card-heading"><div><p class="section-label">Historical records</p><h2>Attendance History</h2><p>Search records without losing access to relieved employees.</p></div></div>
+      <div class="card-heading"><div><p class="section-label">Historical records</p><h2>Attendance History</h2><p>Only today's attendance for active employees can be edited. All other records are read-only.</p></div></div>
       <form class="filters" [formGroup]="filterForm" (ngSubmit)="applyFilters()">
         <div class="field"><label for="history-date">Date</label><input appDatePicker id="history-date" type="date" formControlName="date" /></div>
         <div class="field">
@@ -77,7 +77,8 @@
                   <td><span class="status" [class]="'status ' + statusClass(record.status)">{{ record.status }}</span></td>
                   <td>
                     @if (isEmployeeActive(record.employeeId) && isToday(record.date)) { <button class="edit-button" type="button" (click)="editAttendance(record)">Edit Status</button> }
-                    @else { <span class="history-only">History only</span> }
+                    @else if (!isEmployeeActive(record.employeeId)) { <span class="history-only" title="Attendance history is preserved after an employee is relieved.">Read-only · Relieved employee</span> }
+                    @else { <span class="history-only" title="Attendance can only be edited on its recorded date.">Read-only · Not today's record</span> }
                   </td>
                 </tr>
               }

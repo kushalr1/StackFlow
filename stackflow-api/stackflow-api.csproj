@@ -9,11 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../StackFlow.Application/StackFlow.Application.csproj" />
+    <ProjectReference Include="../StackFlow.Infrastructure/StackFlow.Infrastructure.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10" />
     <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
   </ItemGroup>
 
 </Project>

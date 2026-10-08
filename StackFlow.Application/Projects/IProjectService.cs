@@ -1,0 +1,29 @@
+using stackflow_api.DTOs;
+using stackflow_api.Models;
+
+namespace stackflow_api.Services;
+
+public interface IProjectService
+{
+    Task<IReadOnlyList<ProjectDto>> GetAllAsync(ProjectStatus? status);
+    Task<ProjectDto?> GetByIdAsync(int id);
+    Task<ProjectSaveResult> CreateAsync(CreateProjectDto dto);
+    Task<ProjectSaveOutcome> UpdateAsync(int id, SaveProjectDto dto);
+    Task<ProjectSaveOutcome> DeleteAsync(int id);
+    Task<ProjectSaveOutcome> AssignEmployeeAsync(int projectId, AssignEmployeeDto dto);
+    Task<ProjectSaveOutcome> RemoveEmployeeAsync(int projectId, int employeeId);
+}
+
+public enum ProjectSaveOutcome
+{
+    Saved,
+    NotFound,
+    EmployeeNotFound,
+    DuplicateAssignment,
+    AssignmentNotFound,
+    InactiveEmployee,
+    TeamLocked,
+    HasAssignmentHistory
+}
+
+public record ProjectSaveResult(ProjectSaveOutcome Outcome, ProjectDto? Project = null);

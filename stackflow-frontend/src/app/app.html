@@ -3,25 +3,60 @@
     <aside class="sidebar">
       <a class="brand" routerLink="/dashboard" aria-label="StackFlow dashboard">
         <span class="brand-mark">SF</span>
-        <span><strong>StackFlow</strong><small>Admin Management</small></span>
+        <span><strong>StackFlow</strong><small>{{ authService.role() }} Panel</small></span>
       </a>
 
-      <nav aria-label="Admin navigation">
-        <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
-        <a routerLink="/employees" routerLinkActive="active">Employees</a>
-        <a routerLink="/attendance" routerLinkActive="active">Attendance</a>
-        <a routerLink="/leaves" routerLinkActive="active">Leave Requests</a>
-        <a routerLink="/departments" routerLinkActive="active">Departments</a>
-        <a routerLink="/projects" routerLinkActive="active">Projects</a>
-      </nav>
+      @if (authService.role() === 'Admin') {
+        <nav aria-label="Admin navigation">
+          <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+          <a routerLink="/employees" routerLinkActive="active">Employees</a>
+          <a routerLink="/attendance" routerLinkActive="active">Attendance</a>
+          <a routerLink="/leaves" [queryParams]="{ tab: 'pending' }" routerLinkActive="active">Leave Requests
+            @if ((dashboardService.pendingLeaves() ?? 0) > 0) {
+              <span class="pending-badge" [attr.aria-label]="dashboardService.pendingLeaves() + ' pending leave requests'">{{ dashboardService.pendingLeaves() }}</span>
+            }
+          </a>
+          <a routerLink="/departments" routerLinkActive="active">Departments</a>
+          <a routerLink="/projects" routerLinkActive="active">Projects</a>
+        </nav>
+      } @else {
+        <nav aria-label="Employee navigation">
+          <a routerLink="/employee" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">My Dashboard</a>
+          <a routerLink="/employee/profile" routerLinkActive="active">My Profile</a>
+          <a routerLink="/employee/attendance" routerLinkActive="active">My Attendance</a>
+          <a routerLink="/employee/leaves" routerLinkActive="active">My Leaves</a>
+          <a routerLink="/employee/projects" routerLinkActive="active">My Projects</a>
+          <a routerLink="/employee/tasks" routerLinkActive="active">My To-do</a>
+        </nav>
+      }
 
       <div class="sidebar-footer">
-        <small>{{ authService.adminEmail() }}</small>
+        <small>{{ authService.email() }}</small>
         <button type="button" (click)="logout()">Logout</button>
       </div>
     </aside>
 
-    <main class="page-content"><router-outlet /></main>
+    <main class="page-content">
+      @if (authService.role() === 'Employee') {
+        <div class="notification-toolbar">
+          <button class="notification-bell" type="button" aria-label="Notifications" title="Notifications" [attr.aria-expanded]="notificationsOpen()" aria-controls="employee-notifications" (click)="notificationsOpen.set(!notificationsOpen())">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+            @if ((notifications.inbox()?.unreadCount ?? 0) > 0) { <span class="pending-badge" [attr.aria-label]="notifications.inbox()?.unreadCount + ' unread notifications'">{{ notifications.inbox()?.unreadCount }}</span> }
+          </button>
+        </div>
+        @if (notificationsOpen()) {
+          <section class="notification-panel" id="employee-notifications" aria-label="Project assignment notifications">
+            <header><strong>Project assignments</strong><button type="button" aria-label="Close notifications" (click)="notificationsOpen.set(false)">Close</button></header>
+            @if (notifications.error()) { <p role="alert">{{ notifications.error() }}</p> }
+            @if (!notifications.inbox() && !notifications.error()) { <p>Loading notifications…</p> }
+            @for (item of notifications.inbox()?.items ?? []; track item.id) {
+              <button class="notification-item" type="button" [class.unread]="!item.readAt" (click)="openNotification(item)"><span>{{ item.message }}</span><small>{{ item.readAt ? 'Read' : 'New' }} · View My Projects</small></button>
+            } @empty { @if (notifications.inbox()) { <p>No assignment notifications yet.</p> } }
+          </section>
+        }
+      }
+      <router-outlet />
+    </main>
   </div>
 } @else {
   <router-outlet />

@@ -30,7 +30,7 @@
         <button type="button" class="secondary" (click)="cancelEdit()">Back to Projects</button>
       </div>
       <div class="form-grid">
-        <div><label>Name</label><input #projectNameInput type="text" formControlName="name" maxlength="100" />
+        <div><label>Name</label><input appInitialCapital #projectNameInput type="text" formControlName="name" maxlength="100" />
           @if (projectForm.controls.name.touched && projectForm.controls.name.invalid) { <small>Enter at least 2 characters.</small> }</div>
         <div><label>Status</label><app-dropdown formControlName="status" [options]="statusOptions" ariaLabel="Select project status" /></div>
         <div><label>Priority</label><app-dropdown formControlName="priority" [options]="priorityOptions" ariaLabel="Select project priority" /></div>
@@ -46,9 +46,20 @@
             @if (projectForm.hasError('completionBeforeStart')) { <small>Completion cannot be before the start date.</small> }
           </div>
         }
-        <div class="description"><label>Description</label><textarea rows="3" maxlength="500" formControlName="description"></textarea></div>
+        <div class="description"><label>Description</label><textarea appInitialCapital rows="3" maxlength="500" formControlName="description"></textarea></div>
       </div>
       <div class="form-actions">
+        @if (editingId() === null) {
+          <section class="create-team">
+            <label>Assign Team (optional)</label>
+            <app-dropdown [value]="0" [options]="createTeamOptions()" placeholder="Select employee to add" ariaLabel="Add employee to new project" (valueChange)="addCreateEmployee($event)" />
+            <div class="team">
+              @for (employee of createTeam(); track employee.id) {
+                <span><strong>{{ employee.name }}</strong><small>Member</small><button type="button" [attr.aria-label]="'Remove ' + employee.name" (click)="removeCreateEmployee(employee.id)">×</button></span>
+              }
+            </div>
+          </section>
+        }
         <button type="button" class="secondary" (click)="cancelEdit()">Cancel</button>
         <button class="primary" type="submit">{{ editingId() === null ? 'Create Project' : 'Save Changes' }}</button>
       </div>
@@ -102,8 +113,8 @@
           <div class="assignment-panel">
             <h3>Assign Employee</h3>
             <div class="assign">
-              <app-dropdown [value]="assignments.get(project.id) ?? 0" [options]="assignmentOptions(project)" ariaLabel="Select employee to assign" (valueChange)="changeAssignment(project.id, $event)" />
-              <input type="text" maxlength="50" placeholder="Role, e.g. Developer" (input)="changeAssignmentRole(project.id, $event)" />
+              <app-dropdown [value]="assignments.get(project.id) ?? 0" [options]="selectedAssignmentOptions()" ariaLabel="Select employee to assign" (valueChange)="changeAssignment(project.id, $event)" />
+              <input appInitialCapital type="text" maxlength="50" placeholder="Role, e.g. Developer" (input)="changeAssignmentRole(project.id, $event)" />
               <button class="primary" [disabled]="busyId() === project.id" (click)="assign(project)">Assign</button>
             </div>
           </div>

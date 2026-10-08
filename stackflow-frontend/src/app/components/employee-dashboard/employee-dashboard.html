@@ -1,0 +1,59 @@
+<header>
+  <p class="eyebrow">EMPLOYEE PORTAL</p>
+  <h1>{{ profile() ? 'Welcome, ' + profile()!.name : 'My Dashboard' }}</h1>
+  <p>Your attendance, leave requests and project assignments in one place.</p>
+</header>
+<section class="profile-panel">
+  @if (loading().profile) { <p>Loading your profile…</p> }
+  @else if (errors().profile) { <p role="alert" class="error">Your profile could not be loaded.</p> }
+  @else if (profile(); as employee) {
+    <div><strong>{{ employee.jobTitle }}</strong><p>{{ employee.department }}</p></div>
+    <span class="badge">{{ employee.isActive ? 'Employed' : 'Relieved' }}</span>
+  }
+  <a routerLink="/employee/profile">View my profile</a>
+</section>
+<div class="summary-grid">
+  <a class="summary-card" routerLink="/employee/attendance">
+    <h2>My Attendance</h2><p>{{ month | date:'MMMM yyyy' }}</p>
+    @if (loading().attendance) { <p>Loading…</p> }
+    @else if (errors().attendance) { <p role="alert" class="error">Attendance unavailable</p> }
+    @else { <strong class="count">{{ present() }}</strong><p>Present · {{ attendance().length }} total records</p> }
+    <span class="action">View attendance history</span>
+  </a>
+  <a class="summary-card" routerLink="/employee/leaves">
+    <h2>My Leaves</h2><p>All requests</p>
+    @if (loading().leaves) { <p>Loading…</p> }
+    @else if (errors().leaves) { <p role="alert" class="error">Leave requests unavailable</p> }
+    @else { <strong class="count">{{ pending() }}</strong><p>Pending · {{ approved() }} approved requests</p> }
+    <span class="action">View or request leave</span>
+  </a>
+  <a class="summary-card" routerLink="/employee/projects">
+    <h2>My Projects</h2><p>Your assignments</p>
+    @if (loading().projects) { <p>Loading…</p> }
+    @else if (errors().projects) { <p role="alert" class="error">Projects unavailable</p> }
+    @else { <strong class="count">{{ currentProjects().length }}</strong><p>Current · {{ completedProjects() }} completed projects</p> }
+    <span class="action">View projects and history</span>
+  </a>
+</div>
+<div class="detail-grid">
+  <section class="detail-panel">
+    <h2>Recent Leave Requests</h2>
+    @if (loading().leaves) { <p>Loading…</p> }
+    @else if (errors().leaves) { <p class="error">Leave requests could not be loaded. Refresh to try again.</p> }
+    @else {
+      @for (leave of leaves().slice(0, 3); track leave.id) {
+        <div class="detail-row"><div><strong>{{ leave.leaveType }}</strong><p>{{ leave.startDate | date:'dd MMM yyyy' }} – {{ leave.endDate | date:'dd MMM yyyy' }}</p></div><span class="badge">{{ leave.status }}</span></div>
+      } @empty { <p>No leave requests yet.</p> }
+    }
+  </section>
+  <section class="detail-panel">
+    <h2>Current Assignments</h2>
+    @if (loading().projects) { <p>Loading…</p> }
+    @else if (errors().projects) { <p class="error">Projects could not be loaded. Refresh to try again.</p> }
+    @else {
+      @for (project of currentProjects().slice(0, 3); track project.id) {
+        <div class="detail-row"><div><strong>{{ project.name }}</strong><p>{{ project.role }}</p></div><span class="badge">{{ project.status === 'OnHold' ? 'On hold' : project.status }}</span></div>
+      } @empty { <p>No current project assignments.</p> }
+    }
+  </section>
+</div>

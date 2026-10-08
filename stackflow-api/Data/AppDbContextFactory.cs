@@ -17,7 +17,7 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
                 "Connection string 'DefaultConnection' was not found in User Secrets.");
 
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql(connectionString)
+            .UseNpgsql(connectionString, postgres => postgres.MigrationsAssembly("stackflow-api"))
             .Options;
 
         return new AppDbContext(options);

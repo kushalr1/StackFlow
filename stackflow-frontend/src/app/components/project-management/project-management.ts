@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { InitialCapitalDirective } from '../../directives/initial-capital.directive';
 import { Component, computed, ElementRef, HostListener, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
@@ -28,7 +29,7 @@ const projectDates: ValidatorFn = (control: AbstractControl): ValidationErrors |
 };
 
 @Component({
-  selector: 'app-project-management', imports: [ReactiveFormsModule, DatePickerDirective, Dropdown],
+  selector: 'app-project-management', imports: [ReactiveFormsModule, DatePickerDirective, Dropdown, InitialCapitalDirective],
   templateUrl: './project-management.html', styleUrl: './project-management.css',
 })
 export class ProjectManagement implements OnInit {
@@ -60,6 +61,29 @@ export class ProjectManagement implements OnInit {
     return this.visibleProjects().find(project => project.id === selectedId) ?? null;
   });
   protected readonly employees = signal<Employee[]>([]);
+  protected readonly createEmployeeIds = signal<number[]>([]);
+  protected readonly createTeam = computed(() => this.employees().filter(employee => this.createEmployeeIds().includes(employee.id)));
+  protected readonly createTeamOptions = computed<DropdownOption[]>(() => [
+    { value: 0, label: 'Select employee to add' },
+    ...this.employees().filter(employee => !this.createEmployeeIds().includes(employee.id))
+      .map(employee => ({ value: employee.id, label: employee.name })),
+  ]);
+  protected addCreateEmployee(value: string | number): void {
+    const id = Number(value);
+    if (id && !this.createEmployeeIds().includes(id)) this.createEmployeeIds.update(ids => [...ids, id]);
+  }
+  protected removeCreateEmployee(id: number): void {
+    this.createEmployeeIds.update(ids => ids.filter(employeeId => employeeId !== id));
+  }
+  protected readonly selectedAssignmentOptions = computed<DropdownOption[]>(() => {
+    const project = this.selectedProject();
+    const assignedIds = new Set(project?.employees.map(employee => employee.id) ?? []);
+    return [
+      { value: 0, label: 'Select employee' },
+      ...this.employees().filter(employee => !assignedIds.has(employee.id))
+        .map(employee => ({ value: employee.id, label: employee.name })),
+    ];
+  });
   protected readonly editingId = signal<number | null>(null);
   protected readonly isLoading = signal(true);
   protected readonly busyId = signal<number | null>(null);
@@ -89,12 +113,17 @@ export class ProjectManagement implements OnInit {
     this.clearMessages();
     if (this.projectForm.invalid) { this.projectForm.markAllAsTouched(); return; }
     const raw = this.projectForm.getRawValue();
+    if (this.editingId() === null && this.createEmployeeIds().length && (raw.status === 'OnHold' || raw.status === 'Completed')) {
+      this.errorMessage.set('Choose Planned or Active to assign employees, or remove the selected team.');
+      return;
+    }
     const request = {
       ...raw,
       name: raw.name.trim(),
       description: raw.description.trim(),
       dueDate: raw.dueDate || null,
       completedOn: raw.status === 'Completed' ? raw.completedOn || null : null,
+      ...(this.editingId() === null ? { employeeIds: this.createEmployeeIds() } : {}),
     };
     const id = this.editingId();
     const operation: Observable<Project | void> = id === null
@@ -102,6 +131,7 @@ export class ProjectManagement implements OnInit {
     operation.subscribe({ next: () => {
       this.successMessage.set(id === null ? 'Project created.' : 'Project updated.');
       this.editingId.set(null);
+      this.createEmployeeIds.set([]);
       this.projectForm.reset({ name: '', description: '', startDate: '', dueDate: '', completedOn: '', status: 'Planned', priority: 'Medium' });
       this.activeTab.set(raw.status === 'Completed' ? 'history' : 'current');
       this.load();
@@ -126,6 +156,7 @@ export class ProjectManagement implements OnInit {
     }));
   }
   protected openCreate(): void {
+    this.createEmployeeIds.set([]);
     this.editingId.set(null);
     this.projectForm.reset({ name: '', description: '', startDate: '', dueDate: '', completedOn: '', status: 'Planned', priority: 'Medium' });
     this.activeTab.set('form');
@@ -134,6 +165,7 @@ export class ProjectManagement implements OnInit {
     }));
   }
   protected cancelEdit(): void {
+    this.createEmployeeIds.set([]);
     this.editingId.set(null);
     this.projectForm.reset({ name: '', description: '', startDate: '', dueDate: '', completedOn: '', status: 'Planned', priority: 'Medium' });
     this.activeTab.set('current');
@@ -177,16 +209,6 @@ export class ProjectManagement implements OnInit {
   }
   protected changeAssignmentRole(projectId: number, event: Event): void {
     this.assignmentRoles.set(projectId, (event.target as HTMLInputElement).value);
-  }
-  protected availableEmployees(project: Project): Employee[] {
-    const assignedIds = new Set(project.employees.map(employee => employee.id));
-    return this.employees().filter(employee => !assignedIds.has(employee.id));
-  }
-  protected assignmentOptions(project: Project): DropdownOption[] {
-    return [
-      { value: 0, label: 'Select employee' },
-      ...this.availableEmployees(project).map(employee => ({ value: employee.id, label: employee.name })),
-    ];
   }
   protected canManageTeam(project: Project): boolean {
     return project.status === 'Planned' || project.status === 'Active';

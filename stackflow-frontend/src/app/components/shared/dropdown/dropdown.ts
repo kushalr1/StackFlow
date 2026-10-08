@@ -24,6 +24,7 @@ export class Dropdown implements ControlValueAccessor {
   @Output() readonly valueChange = new EventEmitter<string | number>();
 
   protected isOpen = false;
+  protected menuHeight = 220;
   protected currentValue: string | number = '';
   protected isDisabled = false;
 
@@ -38,7 +39,11 @@ export class Dropdown implements ControlValueAccessor {
 
   protected toggle(event: MouseEvent): void {
     event.stopPropagation();
-    if (!this.isDisabled) this.isOpen = !this.isOpen;
+    if (!this.isDisabled) {
+      const trigger = event.currentTarget as HTMLElement;
+      if (trigger) this.menuHeight = Math.max(60, Math.min(220, window.innerHeight - trigger.getBoundingClientRect().bottom - 16));
+      this.isOpen = !this.isOpen;
+    }
   }
 
   protected select(option: DropdownOption, event: MouseEvent): void {

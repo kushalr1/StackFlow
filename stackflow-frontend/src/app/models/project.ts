@@ -13,6 +13,7 @@ export interface ProjectRequest {
   name: string; description: string; startDate: string;
   dueDate: string | null; completedOn: string | null;
   status: ProjectStatus; priority: ProjectPriority;
+  employeeIds?: number[];
 }
 
 export interface ProjectAssignmentRequest {

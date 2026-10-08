@@ -35,14 +35,35 @@ namespace stackflow_api.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
+                    b.Property<int?>("EmployeeId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Admin");
+
+                    b.Property<int>("SessionVersion")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("EmployeeId")
                         .IsUnique();
 
                     b.ToTable("AdminUsers", (string)null);
@@ -158,6 +179,40 @@ namespace stackflow_api.Migrations
                     b.ToTable("Employees", (string)null);
                 });
 
+            modelBuilder.Entity("stackflow_api.Models.EmployeeNotification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("EmployeeId", "ReadAt");
+
+                    b.ToTable("EmployeeNotifications", (string)null);
+                });
+
             modelBuilder.Entity("stackflow_api.Models.EmployeeProject", b =>
                 {
                     b.Property<int>("EmployeeId")
@@ -226,6 +281,40 @@ namespace stackflow_api.Migrations
                     b.ToTable("LeaveRequests", (string)null);
                 });
 
+            modelBuilder.Entity("stackflow_api.Models.PersonalTask", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateOnly>("DueDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsCompleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Period")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId", "DueDate");
+
+                    b.ToTable("PersonalTasks", (string)null);
+                });
+
             modelBuilder.Entity("stackflow_api.Models.Project", b =>
                 {
                     b.Property<int>("Id")
@@ -268,6 +357,16 @@ namespace stackflow_api.Migrations
                     b.ToTable("Projects", (string)null);
                 });
 
+            modelBuilder.Entity("stackflow_api.Models.AdminUser", b =>
+                {
+                    b.HasOne("stackflow_api.Models.Employee", "Employee")
+                        .WithOne("UserAccount")
+                        .HasForeignKey("stackflow_api.Models.AdminUser", "EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Employee");
+                });
+
             modelBuilder.Entity("stackflow_api.Models.Attendance", b =>
                 {
                     b.HasOne("stackflow_api.Models.Employee", "Employee")
@@ -288,6 +387,25 @@ namespace stackflow_api.Migrations
                         .IsRequired();
 
                     b.Navigation("Department");
+                });
+
+            modelBuilder.Entity("stackflow_api.Models.EmployeeNotification", b =>
+                {
+                    b.HasOne("stackflow_api.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("stackflow_api.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Project");
                 });
 
             modelBuilder.Entity("stackflow_api.Models.EmployeeProject", b =>
@@ -320,6 +438,17 @@ namespace stackflow_api.Migrations
                     b.Navigation("Employee");
                 });
 
+            modelBuilder.Entity("stackflow_api.Models.PersonalTask", b =>
+                {
+                    b.HasOne("stackflow_api.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+                });
+
             modelBuilder.Entity("stackflow_api.Models.Department", b =>
                 {
                     b.Navigation("Employees");
@@ -332,6 +461,8 @@ namespace stackflow_api.Migrations
                     b.Navigation("EmployeeProjects");
 
                     b.Navigation("LeaveRequests");
+
+                    b.Navigation("UserAccount");
                 });
 
             modelBuilder.Entity("stackflow_api.Models.Project", b =>

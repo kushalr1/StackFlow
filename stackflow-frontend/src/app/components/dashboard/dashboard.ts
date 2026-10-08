@@ -2,7 +2,6 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
-import { DashboardStats } from '../../models/dashboard-stats';
 import { DashboardService } from '../../services/dashboard.service';
 
 @Component({
@@ -14,7 +13,7 @@ import { DashboardService } from '../../services/dashboard.service';
 export class Dashboard implements OnInit {
   private readonly dashboardService = inject(DashboardService);
 
-  protected readonly stats = signal<DashboardStats | null>(null);
+  protected readonly stats = this.dashboardService.stats;
   protected readonly isLoading = signal(true);
   protected readonly errorMessage = signal('');
 

@@ -1,37 +1,22 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
-import { finalize, forkJoin, Observable } from 'rxjs';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { finalize, forkJoin } from 'rxjs';
 import { Employee } from '../../models/employee';
 import { LeaveRequest, LeaveStatus, LeaveType } from '../../models/leave-request';
 import { EmployeeService } from '../../services/employee.service';
 import { LeaveRequestService } from '../../services/leave-request.service';
+import { DashboardService } from '../../services/dashboard.service';
 import { DatePickerDirective } from '../../directives/date-picker.directive';
 import { Dropdown, DropdownOption } from '../shared/dropdown/dropdown';
-
-const dateRangeValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
-  const startDate = control.get('startDate')?.value as string;
-  const endDate = control.get('endDate')?.value as string;
-  const today = new Date();
-  const latest = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
-  const latestDate = localDateString(latest);
-  const earliestDate = localDateString(today);
-
-  if ((startDate && (startDate < earliestDate || startDate > latestDate)) ||
-      (endDate && (endDate < earliestDate || endDate > latestDate))) {
-    return { dateOutOfRange: true };
-  }
-
-  return startDate && endDate && endDate < startDate ? { invalidDateRange: true } : null;
-};
 
 function localDateString(date: Date): string {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
   return local.toISOString().slice(0, 10);
 }
 
-type LeaveTab = 'record' | 'pending' | 'calendar' | 'history';
+type LeaveTab = 'pending' | 'calendar' | 'history';
 
 interface LeaveHistoryFilters {
   employeeId: number;
@@ -57,6 +42,7 @@ export class LeaveManagement implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly employeeService = inject(EmployeeService);
   private readonly leaveService = inject(LeaveRequestService);
+  private readonly dashboardService = inject(DashboardService);
   private readonly route = inject(ActivatedRoute);
 
   protected readonly leaveTypes: { value: LeaveType; label: string }[] = [
@@ -66,7 +52,6 @@ export class LeaveManagement implements OnInit {
     { value: 'Other', label: 'Other' },
   ];
   protected readonly statuses: LeaveStatus[] = ['Pending', 'Approved', 'Rejected'];
-  protected readonly leaveTypeOptions: DropdownOption[] = this.leaveTypes;
   protected readonly historyLeaveTypeOptions: DropdownOption[] = [
     { value: '', label: 'All leave types' },
     ...this.leaveTypes,
@@ -83,10 +68,9 @@ export class LeaveManagement implements OnInit {
   protected readonly latestLeaveDate = localDateString(
     new Date(new Date().getFullYear() + 1, new Date().getMonth(), new Date().getDate()),
   );
-  protected readonly activeEmployees = signal<Employee[]>([]);
   protected readonly allEmployees = signal<Employee[]>([]);
   protected readonly requests = signal<LeaveRequest[]>([]);
-  protected readonly activeTab = signal<LeaveTab>('record');
+  protected readonly activeTab = signal<LeaveTab>('pending');
   protected readonly historyFilters = signal<LeaveHistoryFilters>({
     employeeId: 0,
     status: '',
@@ -140,19 +124,10 @@ export class LeaveManagement implements OnInit {
 
     return days;
   });
-  protected readonly editingId = signal<number | null>(null);
   protected readonly isLoading = signal(true);
-  protected readonly isSaving = signal(false);
   protected readonly updatingStatusId = signal<number | null>(null);
   protected readonly errorMessage = signal('');
   protected readonly successMessage = signal('');
-
-  protected activeEmployeeOptions(): DropdownOption[] {
-    return [
-      { value: 0, label: 'Select active employee' },
-      ...this.activeEmployees().map(employee => ({ value: employee.id, label: employee.name })),
-    ];
-  }
 
   protected historyEmployeeOptions(): DropdownOption[] {
     return [
@@ -164,14 +139,6 @@ export class LeaveManagement implements OnInit {
     ];
   }
 
-  protected readonly leaveForm = this.formBuilder.nonNullable.group({
-    employeeId: [0, Validators.min(1)],
-    leaveType: ['CasualLeave' as LeaveType, Validators.required],
-    startDate: ['', Validators.required],
-    endDate: ['', Validators.required],
-    reason: ['', [Validators.required, Validators.pattern(/.*\S.*/), Validators.minLength(5), Validators.maxLength(500)]],
-  }, { validators: dateRangeValidator });
-
   protected readonly filterForm = this.formBuilder.nonNullable.group({
     employeeId: [0],
     status: [''],
@@ -182,7 +149,7 @@ export class LeaveManagement implements OnInit {
 
   ngOnInit(): void {
     const requestedTab = this.route.snapshot.queryParamMap.get('tab');
-    if (requestedTab === 'pending' || requestedTab === 'calendar' || requestedTab === 'history' || requestedTab === 'record') {
+    if (requestedTab === 'pending' || requestedTab === 'calendar' || requestedTab === 'history') {
       this.activeTab.set(requestedTab);
     }
     forkJoin({ employees: this.employeeService.getEmployees(), requests: this.leaveService.getLeaveRequests() })
@@ -190,55 +157,11 @@ export class LeaveManagement implements OnInit {
       .subscribe({
         next: ({ employees, requests }) => {
           this.allEmployees.set(employees);
-          this.activeEmployees.set(employees.filter(employee => employee.isActive));
           this.requests.set(requests);
+          this.updatePendingCount(requests);
         },
         error: () => this.errorMessage.set('Leave request information could not be loaded.'),
       });
-  }
-
-  protected saveRequest(): void {
-    this.clearMessages();
-    if (this.leaveForm.invalid) {
-      this.leaveForm.markAllAsTouched();
-      return;
-    }
-
-    const raw = this.leaveForm.getRawValue();
-    const request = { ...raw, reason: raw.reason.trim() };
-    const editingId = this.editingId();
-    const operation: Observable<LeaveRequest | void> = editingId === null
-      ? this.leaveService.createLeaveRequest(request)
-      : this.leaveService.updateLeaveRequest(editingId, request);
-
-    this.isSaving.set(true);
-    operation.pipe(finalize(() => this.isSaving.set(false))).subscribe({
-      next: () => {
-        this.successMessage.set(editingId === null ? 'Leave request recorded successfully.' : 'Leave request updated successfully.');
-        this.cancelEdit();
-        this.loadRequests();
-      },
-      error: (error: HttpErrorResponse) =>
-        this.errorMessage.set(error.error?.message ?? 'Leave request could not be saved.'),
-    });
-  }
-
-  protected editRequest(request: LeaveRequest): void {
-    this.activeTab.set('record');
-    this.editingId.set(request.id);
-    this.clearMessages();
-    this.leaveForm.setValue({
-      employeeId: request.employeeId,
-      leaveType: request.leaveType.replace(' ', '') as LeaveType,
-      startDate: request.startDate,
-      endDate: request.endDate,
-      reason: request.reason,
-    });
-  }
-
-  protected cancelEdit(): void {
-    this.editingId.set(null);
-    this.leaveForm.reset({ employeeId: 0, leaveType: 'CasualLeave', startDate: '', endDate: '', reason: '' });
   }
 
   protected changeStatus(request: LeaveRequest, status: 'Approved' | 'Rejected'): void {
@@ -277,7 +200,6 @@ export class LeaveManagement implements OnInit {
   }
 
   protected selectTab(tab: LeaveTab): void {
-    if (tab !== 'record' && this.editingId() !== null) this.cancelEdit();
     this.activeTab.set(tab);
     this.clearMessages();
   }
@@ -316,7 +238,7 @@ export class LeaveManagement implements OnInit {
     this.leaveService.getLeaveRequests()
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
-        next: requests => this.requests.set(requests),
+        next: requests => { this.requests.set(requests); this.updatePendingCount(requests); },
         error: () => this.errorMessage.set('Leave requests could not be loaded.'),
       });
   }
@@ -324,5 +246,12 @@ export class LeaveManagement implements OnInit {
   private clearMessages(): void {
     this.errorMessage.set('');
     this.successMessage.set('');
+  }
+
+  private updatePendingCount(requests: LeaveRequest[]): void {
+    const count = requests.filter(request => request.status === 'Pending').length;
+    this.dashboardService.pendingLeaves.set(count);
+    const stats = this.dashboardService.stats();
+    if (stats) this.dashboardService.stats.set({ ...stats, pendingLeaveRequests: count });
   }
 }

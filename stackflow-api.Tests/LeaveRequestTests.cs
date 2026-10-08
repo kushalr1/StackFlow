@@ -38,15 +38,11 @@ public class LeaveRequestTests
     }
 
     [Fact]
-    public async Task Create_ValidRequest_Returns201CreatedAndPendingStatus()
+    public void AdminRoutes_DoNotAllowCreatingOrEditingRequests()
     {
-        var controller = new LeavesController(new FakeLeaveRequestService());
-
-        var result = await controller.Create(ValidRequest());
-
-        var created = Assert.IsType<CreatedAtActionResult>(result.Result);
-        var request = Assert.IsType<LeaveRequestDto>(created.Value);
-        Assert.Equal("Pending", request.Status);
+        var methods = typeof(LeavesController).GetMethods();
+        Assert.DoesNotContain(methods, method => method.IsDefined(typeof(HttpPostAttribute), true));
+        Assert.DoesNotContain(methods, method => method.IsDefined(typeof(HttpPutAttribute), true));
     }
 
     [Fact]
@@ -76,6 +72,18 @@ public class LeaveRequestTests
         Assert.IsType<BadRequestObjectResult>(result);
     }
 
+    [Fact]
+    public async Task UpdateStatus_DecidedRequest_Returns409Conflict()
+    {
+        var controller = new LeavesController(new FakeLeaveRequestService
+        {
+            StatusOutcome = LeaveSaveOutcome.NotEditable
+        });
+        var result = await controller.UpdateStatus(1,
+            new UpdateLeaveStatusDto { Status = LeaveStatus.Rejected });
+        Assert.IsType<ConflictObjectResult>(result);
+    }
+
     private static SaveLeaveRequestDto ValidRequest() => new()
     {
         EmployeeId = 1,
@@ -87,6 +95,7 @@ public class LeaveRequestTests
 
     private sealed class FakeLeaveRequestService : ILeaveRequestService
     {
+        public LeaveSaveOutcome? StatusOutcome { get; init; }
         private readonly List<LeaveRequestDto> requests = [];
 
         public Task<IReadOnlyList<LeaveRequestDto>> GetAllAsync(
@@ -120,6 +129,7 @@ public class LeaveRequestTests
 
         public Task<LeaveSaveOutcome> UpdateStatusAsync(int id, LeaveStatus status)
         {
+            if (StatusOutcome.HasValue) return Task.FromResult(StatusOutcome.Value);
             var request = requests.FirstOrDefault(item => item.Id == id);
             if (request is null) return Task.FromResult(LeaveSaveOutcome.NotFound);
             request.Status = status.ToString();

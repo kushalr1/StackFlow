@@ -25,6 +25,7 @@ public class AuthenticationTests
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         var response = Assert.IsType<LoginResponseDto>(ok.Value);
         Assert.NotEmpty(response.Token);
+        Assert.Equal(UserRoles.Admin, response.Role);
     }
 
     [Theory]
@@ -50,7 +51,7 @@ public class AuthenticationTests
     {
         var admin = new AdminUser { Email = "admin@stackflow.local" };
         var passwordHasher = new PasswordHasher<AdminUser>();
-        const string password = "StackFlowDev!2026";
+        const string password = "AuthenticationTest!2026";
 
         var hash = passwordHasher.HashPassword(admin, password);
         var result = passwordHasher.VerifyHashedPassword(admin, hash, password);
@@ -79,7 +80,8 @@ public class AuthenticationTests
                 {
                     Email = loginRequest.Email,
                     Token = "test-token",
-                    ExpiresAt = DateTime.UtcNow.AddHours(1)
+                    ExpiresAt = DateTime.UtcNow.AddHours(1),
+                    Role = UserRoles.Admin
                 }
                 : null;
 

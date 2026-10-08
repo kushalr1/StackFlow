@@ -81,6 +81,60 @@
     </article>
 
     <article class="history-card">
+      <h2>Employee Login Access</h2>
+      @if (accountLoading()) { <p>Loading login access…</p> }
+      @else if (account(); as login) {
+        <p>Login email: <strong>{{ login.email }}</strong></p>
+        <p>{{ login.isActive && employee.isActive ? 'Login enabled' : 'Login unavailable' }}</p>
+        <div class="access-actions">
+          @if (login.isActive || employee.isActive) {
+            @if (!accessConfirmation()) {
+              <button type="button" class="secondary-button" (click)="accessConfirmation.set(true)" [disabled]="accountSaving()">{{ login.isActive ? 'Disable Login' : 'Enable Login' }}</button>
+            } @else {
+              <p>{{ login.isActive ? 'Disable login and invalidate existing sessions? Employee history remains unchanged.' : 'Enable login with the existing employee password?' }}</p>
+              <button type="button" class="primary-button" (click)="toggleAccess()" [disabled]="accountSaving()">{{ accountSaving() ? 'Saving…' : 'Confirm' }}</button>
+              <button type="button" class="secondary-button" (click)="accessConfirmation.set(false)" [disabled]="accountSaving()">Cancel</button>
+            }
+          }
+        </div>
+        @if (login.isActive && employee.isActive && !resetOpen()) {
+          <button type="button" class="secondary-button" (click)="resetOpen.set(true); accountSuccess.set(''); accountError.set('')">Reset Password</button>
+        }
+      } @else if (!employee.isActive) {
+        <p>Relieved employees cannot receive login access.</p>
+      }
+      @if (!accountLoading() && employee.isActive && (!account() || resetOpen())) {
+        <p>{{ resetOpen() ? 'Set a new password for ' + account()!.email : 'Create an Employee account using ' + employee.email }}</p>
+        <form [formGroup]="accountForm" (ngSubmit)="createAccount()" class="account-form">
+          <label for="account-password">Password</label>
+          <div class="password-field">
+            <input id="account-password" [type]="passwordVisible() ? 'text' : 'password'" formControlName="password" autocomplete="new-password" minlength="12" maxlength="128" aria-describedby="password-help" />
+            <button type="button" class="password-toggle" (click)="passwordVisible.set(!passwordVisible())" [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'" [attr.aria-pressed]="passwordVisible()" aria-controls="account-password">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                <circle cx="12" cy="12" r="3" />
+                @if (passwordVisible()) { <path d="m3 3 18 18" /> }
+              </svg>
+            </button>
+          </div>
+          <small id="password-help">Use 12–128 characters. Share privately with the employee.</small>
+          @if (resetOpen()) {
+            <label for="confirm-password">Confirm new password</label>
+            <input id="confirm-password" type="password" formControlName="confirmation" autocomplete="new-password" maxlength="128" />
+            <p>Reset invalidates previous employee sessions.</p>
+            <button type="button" class="secondary-button" (click)="resetOpen.set(false); accountForm.reset(); passwordVisible.set(false)" [disabled]="accountSaving()">Cancel</button>
+          }
+          @if (accountForm.controls.password.touched && accountForm.controls.password.invalid) {
+            <p role="alert" class="account-error">Password must contain 12–128 characters.</p>
+          }
+          <button class="primary-button" type="submit" [disabled]="accountSaving()">{{ accountSaving() ? 'Saving…' : resetOpen() ? 'Save New Password' : 'Create Login Access' }}</button>
+        </form>
+      }
+      @if (accountError()) { <p role="alert" class="account-error">{{ accountError() }}</p> }
+      @if (accountSuccess()) { <p role="status">{{ accountSuccess() }}</p> }
+    </article>
+
+    <article class="history-card">
       <div class="history-heading">
         <div>
           <p class="eyebrow">Work history</p>

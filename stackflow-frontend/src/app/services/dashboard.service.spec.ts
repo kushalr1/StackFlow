@@ -14,6 +14,8 @@ describe('DashboardService', () => {
     request.flush({ totalEmployees: 7, activeEmployees: 7, relievedEmployees: 0,
       presentToday: 0, absentToday: 0, onLeaveToday: 0,
       pendingLeaveRequests: 0, totalDepartments: 6, activeProjects: 1 });
+    expect(service.pendingLeaves()).toBe(0);
+    expect(service.stats()?.totalEmployees).toBe(7);
     http.verify();
   });
 });

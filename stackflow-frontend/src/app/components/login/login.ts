@@ -39,7 +39,9 @@ export class Login {
       .subscribe({
         next: () => {
           const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-          void this.router.navigateByUrl(returnUrl || '/dashboard');
+          void this.router.navigateByUrl(returnUrl || this.authService.homeUrl(), {
+            replaceUrl: true,
+          });
         },
         error: (error: HttpErrorResponse) => {
           this.errorMessage.set(

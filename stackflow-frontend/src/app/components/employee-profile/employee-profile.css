@@ -1,0 +1,18 @@
+.profile-page { display: grid; gap: 1.5rem; }
+.page-heading h1 { margin: 0.25rem 0; color: #0f172a; font-size: clamp(2rem, 4vw, 2.5rem); }
+.page-heading > p:last-child { margin: 0; color: #64748b; }
+.eyebrow { margin: 0; color: #2563eb; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; }
+.state-card, .profile-card { border: 1px solid #dbe4f0; border-radius: 14px; background: #fff; padding: 1.75rem; box-shadow: 0 12px 30px rgb(15 23 42 / 6%); }
+.error-state { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
+.profile-card header { display: flex; padding-bottom: 1.5rem; border-bottom: 1px solid #e2e8f0; align-items: center; gap: 1rem; }
+.profile-card h2, .profile-card header p { margin: 0; }
+.profile-card header p { color: #64748b; }
+.avatar { display: grid; width: 56px; height: 56px; border-radius: 14px; background: #dbeafe; color: #1d4ed8; font-size: 1.35rem; font-weight: 800; place-items: center; }
+.status { margin-left: auto; border-radius: 999px; background: #dcfce7; padding: 0.35rem 0.75rem; color: #166534; font-weight: 700; }
+.status.inactive { background: #f1f5f9; color: #64748b; }
+dl { display: grid; margin: 0; padding: 1.5rem 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+dl div { min-width: 0; }
+dt { margin-bottom: 0.25rem; color: #64748b; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+dd { margin: 0; color: #0f172a; font-weight: 600; overflow-wrap: anywhere; }
+.notice { margin: 0; border-radius: 8px; background: #f8fafc; padding: 0.8rem 1rem; color: #64748b; }
+@media (max-width: 650px) { dl { grid-template-columns: 1fr; } .profile-card header { align-items: flex-start; flex-wrap: wrap; } .status { margin-left: 0; } }

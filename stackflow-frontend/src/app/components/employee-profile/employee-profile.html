@@ -1,0 +1,38 @@
+<section class="profile-page">
+  <div class="page-heading">
+    <p class="eyebrow">MY ACCOUNT</p>
+    <h1>Employee Profile</h1>
+    <p>Personal and employment information linked to your StackFlow account.</p>
+  </div>
+
+  @if (isLoading()) {
+    <div class="state-card" role="status">Loading your profile...</div>
+  } @else if (errorMessage()) {
+    <div class="state-card error-state" role="alert">{{ errorMessage() }}</div>
+  } @else if (profile(); as profile) {
+    <article class="profile-card">
+      <header>
+        <span class="avatar" aria-hidden="true">{{ profile.name.charAt(0).toUpperCase() }}</span>
+        <div>
+          <h2>{{ profile.name }}</h2>
+          <p>{{ profile.jobTitle }} · {{ profile.department }}</p>
+        </div>
+        <span class="status" [class.inactive]="!profile.isActive">
+          {{ profile.isActive ? 'Active' : 'Inactive' }}
+        </span>
+      </header>
+
+      <dl>
+        <div><dt>Employee ID</dt><dd>#{{ profile.id }}</dd></div>
+        <div><dt>Email</dt><dd>{{ profile.email }}</dd></div>
+        <div><dt>Phone</dt><dd>{{ profile.phone }}</dd></div>
+        <div><dt>Department</dt><dd>{{ profile.department }}</dd></div>
+        <div><dt>Job Title</dt><dd>{{ profile.jobTitle }}</dd></div>
+        <div><dt>Date of Joining</dt><dd>{{ profile.dateOfJoining | date: 'longDate' }}</dd></div>
+        <div><dt>Salary</dt><dd>{{ profile.salary | currency: 'INR' }}</dd></div>
+      </dl>
+
+      <p class="notice">Contact Admin/HR when any information needs correction.</p>
+    </article>
+  }
+</section>

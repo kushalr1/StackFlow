@@ -17,6 +17,12 @@
       <button type="button" (click)="loadDashboard()">Try Again</button>
     </div>
   } @else if (stats(); as dashboard) {
+    @if (dashboard.pendingLeaveRequests > 0) {
+      <a class="leave-alert" role="status" routerLink="/leaves" [queryParams]="{ tab: 'pending' }">
+        <strong>{{ dashboard.pendingLeaveRequests }} leave request{{ dashboard.pendingLeaveRequests === 1 ? '' : 's' }} awaiting your decision</strong>
+        <span>Review pending approvals</span>
+      </a>
+    }
     <div class="statistics-grid">
       <a class="stat-card total-card" routerLink="/employees">
         <p>Total Employees</p>
@@ -54,7 +60,7 @@
         <span>Active employees with approved leave</span>
       </a>
 
-      <a class="stat-card leave-card" routerLink="/leaves" [queryParams]="{ tab: 'pending' }">
+      <a class="stat-card leave-card" [class.needs-decision]="dashboard.pendingLeaveRequests > 0" routerLink="/leaves" [queryParams]="{ tab: 'pending' }">
         <p>Pending Leaves</p>
         <strong>{{ dashboard.pendingLeaveRequests }}</strong>
         <span>Requests awaiting a decision</span>

@@ -17,7 +17,7 @@
       }
 
       <label for="department-name">Name</label>
-      <input id="department-name" type="text" maxlength="100" formControlName="name" />
+      <input appInitialCapital id="department-name" type="text" maxlength="100" formControlName="name" />
       @if (departmentForm.controls.name.touched && (departmentForm.controls.name.hasError('required') || departmentForm.controls.name.hasError('pattern'))) {
         <small class="validation-error">Department name is required.</small>
       } @else if (departmentForm.controls.name.touched && departmentForm.controls.name.hasError('minlength')) {
@@ -25,7 +25,7 @@
       }
 
       <label for="department-description">Description</label>
-      <textarea id="department-description" rows="5" maxlength="500" formControlName="description"></textarea>
+      <textarea appInitialCapital id="department-description" rows="5" maxlength="500" formControlName="description"></textarea>
 
       <div class="form-actions">
         @if (editingId() !== null) {

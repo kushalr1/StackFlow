@@ -51,3 +51,6 @@ docs/mentor.md
 
 # Generated JavaScript files inside Angular components
 stackflow-frontend/src/app/components/**/*.js
+
+# Private recovery backups (contain database records and password hashes)
+.local-backups/

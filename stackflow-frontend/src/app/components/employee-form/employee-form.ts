@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { InitialCapitalDirective } from '../../directives/initial-capital.directive';
 import { Component, computed, HostListener, inject, OnInit, signal } from '@angular/core';
 import {
   AbstractControl,
@@ -60,7 +61,7 @@ function countryPhone(control: AbstractControl): ValidationErrors | null {
 }
 
 @Component({
-  imports: [ReactiveFormsModule, RouterLink, DatePickerDirective],
+  imports: [ReactiveFormsModule, RouterLink, DatePickerDirective, InitialCapitalDirective],
   selector: 'app-employee-form',
   styleUrl: './employee-form.css',
   templateUrl: './employee-form.html',
@@ -119,6 +120,24 @@ export class EmployeeForm implements OnInit {
     relievedDate: [this.todayDate, Validators.required],
     reason: ['', Validators.maxLength(500)],
   });
+
+  protected blockNonDigitPhoneInput(event: InputEvent): void {
+    if (event.inputType === 'insertText' && event.data && /[^0-9]/.test(event.data)) {
+      event.preventDefault();
+    }
+  }
+
+  protected sanitizePhoneInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const digits = input.value.replace(/[^0-9]/g, '');
+    if (input.value !== digits) {
+      const position = input.selectionStart;
+      const caret = position === null ? null : input.value.slice(0, position).replace(/[^0-9]/g, '').length;
+      input.value = digits;
+      this.employeeForm.controls.phone.setValue(digits);
+      if (caret !== null) input.setSelectionRange(caret, caret);
+    }
+  }
 
   ngOnInit(): void {
     this.loadDepartments();

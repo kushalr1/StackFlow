@@ -1,9 +1,9 @@
 <main class="login-page">
   <section class="login-card">
     <div class="brand-mark" aria-hidden="true">SF</div>
-    <p class="eyebrow">Admin access</p>
+    <p class="eyebrow">Secure access</p>
     <h1>Welcome to StackFlow</h1>
-    <p class="intro">Sign in to manage employees and organization data.</p>
+    <p class="intro">Sign in with your Admin or Employee account.</p>
 
     <form [formGroup]="loginForm" (ngSubmit)="login()" novalidate>
       @if (errorMessage()) {

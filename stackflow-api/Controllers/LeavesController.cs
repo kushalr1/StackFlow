@@ -27,27 +27,6 @@ public class LeavesController(ILeaveRequestService leaveRequestService) : Contro
             : Ok(request);
     }
 
-    [HttpPost]
-    public async Task<ActionResult<LeaveRequestDto>> Create(SaveLeaveRequestDto dto)
-    {
-        var result = await leaveRequestService.CreateAsync(dto);
-        return result.Outcome switch
-        {
-            LeaveSaveOutcome.EmployeeNotFound =>
-                NotFound(new { message = "The selected employee was not found." }),
-            LeaveSaveOutcome.EmployeeInactive =>
-                Conflict(new { message = "A leave request cannot be created for a relieved employee." }),
-            _ => CreatedAtAction(nameof(GetById), new { id = result.LeaveRequest!.Id }, result.LeaveRequest)
-        };
-    }
-
-    [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, SaveLeaveRequestDto dto)
-    {
-        var result = await leaveRequestService.UpdateAsync(id, dto);
-        return ResultToAction(result, id);
-    }
-
     [HttpPatch("{id:int}/status")]
     public async Task<IActionResult> UpdateStatus(int id, UpdateLeaveStatusDto dto)
     {
@@ -69,9 +48,9 @@ public class LeavesController(ILeaveRequestService leaveRequestService) : Contro
         LeaveSaveOutcome.EmployeeInactive =>
             Conflict(new { message = "This action is not available for a relieved employee." }),
         LeaveSaveOutcome.NotEditable =>
-            Conflict(new { message = "Only pending leave requests can be edited." }),
+            Conflict(new { message = "Only pending leave requests can be approved or rejected." }),
         LeaveSaveOutcome.InvalidDateRange =>
-            Conflict(new { message = "This leave cannot be approved because its dates are outside the allowed range. Edit the pending request and enter valid dates first." }),
+            Conflict(new { message = "This leave cannot be approved because its dates are outside the allowed range. Reject it and ask the employee to submit a new request with valid dates." }),
         LeaveSaveOutcome.AttendanceConflict =>
             Conflict(new { message = "This leave cannot be approved because attendance already exists within the requested dates." }),
         LeaveSaveOutcome.OverlappingApprovedLeave =>

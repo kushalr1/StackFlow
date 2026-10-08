@@ -39,7 +39,7 @@
     <div class="form-grid">
       <div class="form-field full-width">
         <label for="name">Name</label>
-        <input id="name" type="text" maxlength="100" formControlName="name" autocomplete="name" />
+        <input appInitialCapital id="name" type="text" maxlength="100" formControlName="name" autocomplete="name" />
         @if (employeeForm.controls.name.touched && (employeeForm.controls.name.hasError('required') || employeeForm.controls.name.hasError('blank'))) {
           <small class="validation-error">Name is required.</small>
         } @else if (employeeForm.controls.name.touched && employeeForm.controls.name.hasError('minlength')) {
@@ -83,7 +83,7 @@
               </div>
             }
           </div>
-          <input id="phone" type="tel" inputmode="numeric" formControlName="phone" autocomplete="tel-national" [attr.maxlength]="selectedPhoneCountry()?.digits ?? 15" placeholder="Phone number" />
+          <input id="phone" type="tel" inputmode="numeric" formControlName="phone" autocomplete="tel-national" [attr.maxlength]="selectedPhoneCountry()?.digits ?? 15" placeholder="Phone number" (beforeinput)="blockNonDigitPhoneInput($event)" (input)="sanitizePhoneInput($event)" />
         </div>
         @if (employeeForm.controls.countryCode.touched && employeeForm.controls.countryCode.hasError('required')) {
           <small class="validation-error">Select a country first.</small>
@@ -118,7 +118,7 @@
 
       <div class="form-field">
         <label for="jobTitle">Job Title</label>
-        <input id="jobTitle" type="text" maxlength="100" formControlName="jobTitle" />
+        <input appInitialCapital id="jobTitle" type="text" maxlength="100" formControlName="jobTitle" />
         @if (employeeForm.controls.jobTitle.touched && (employeeForm.controls.jobTitle.hasError('required') || employeeForm.controls.jobTitle.hasError('blank'))) {
           <small class="validation-error">Job title is required.</small>
         } @else if (employeeForm.controls.jobTitle.touched && employeeForm.controls.jobTitle.hasError('maxlength')) {
@@ -193,7 +193,7 @@
             </div>
             <div class="form-field">
               <label for="relievingReason">Reason (optional)</label>
-              <textarea id="relievingReason" maxlength="500" rows="3" formControlName="reason"></textarea>
+              <textarea appInitialCapital id="relievingReason" maxlength="500" rows="3" formControlName="reason"></textarea>
             </div>
             <button class="relieve-button" type="submit" [disabled]="isRelieving()">
               {{ isRelieving() ? 'Relieving...' : 'Relieve Employee' }}

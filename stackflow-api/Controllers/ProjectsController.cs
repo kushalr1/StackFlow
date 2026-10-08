@@ -23,10 +23,16 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<ProjectDto>> Create(SaveProjectDto dto)
+    public async Task<ActionResult<ProjectDto>> Create(CreateProjectDto dto)
     {
         var result = await projectService.CreateAsync(dto);
-        return CreatedAtAction(nameof(GetById), new { id = result.Project!.Id }, result.Project);
+        return result.Outcome switch
+        {
+            ProjectSaveOutcome.EmployeeNotFound => NotFound(new { message = "A selected employee was not found. Project was not created." }),
+            ProjectSaveOutcome.InactiveEmployee => Conflict(new { message = "Relieved employees cannot be assigned. Project was not created." }),
+            ProjectSaveOutcome.TeamLocked => Conflict(new { message = "Choose Planned or Active to assign employees during creation." }),
+            _ => CreatedAtAction(nameof(GetById), new { id = result.Project!.Id }, result.Project)
+        };
     }
 
     [HttpPut("{id:int}")]

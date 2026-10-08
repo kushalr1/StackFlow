@@ -1,0 +1,18 @@
+<header><p class="eyebrow">PERSONAL PLANNER</p><h1>My To-do</h1><p>Private tasks, separate from assigned projects. Daily/weekly labels do not repeat automatically.</p></header>
+<form class="panel create" (ngSubmit)="add()">
+  <label>Task<input appInitialCapital name="title" [(ngModel)]="title" maxlength="150" required placeholder="What needs to be done?"></label>
+  <label>Deadline<input type="date" name="deadline" [(ngModel)]="dueDate" [min]="today()" max="2100-12-31" required></label>
+  <label class="weekly"><input type="checkbox" name="weekly" [(ngModel)]="weekly"> Weekly task</label>
+  <button type="submit" [disabled]="busy()">Add task</button>
+</form>
+@if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+@if (alerts()) { <p class="notice" role="status">{{ alerts() }} pending task(s) due tomorrow, today or overdue.</p> }
+<nav class="tabs" aria-label="Task status"><button (click)="history.set(false)" [class.active]="!history()">Pending</button><button (click)="history.set(true)" [class.active]="history()">Completed</button></nav>
+<section class="panel">
+  @if (loading()) { <p>Loading tasks…</p> }
+  @else {
+    @for (task of visible(); track task.id) {
+      <article [class.warning]="alert(task)"><div><h2>{{ task.title }}</h2><p>{{ task.period }} · {{ task.dueDate | date:'dd MMM yyyy' }} @if (alert(task)) { <strong>{{ alert(task) }}</strong> }</p></div><div class="actions"><button [disabled]="busy()" (click)="complete(task)">{{ task.isCompleted ? 'Reopen' : 'Complete' }}</button><button class="delete" [disabled]="busy()" (click)="remove(task)">Delete</button></div></article>
+    } @empty { <p>No {{ history() ? 'completed' : 'pending' }} tasks.</p> }
+  }
+</section>

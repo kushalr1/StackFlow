@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using stackflow_api.Data;
 using stackflow_api.Controllers;
 using stackflow_api.DTOs;
 using stackflow_api.Models;
@@ -8,6 +10,33 @@ namespace stackflow_api.Tests;
 
 public class ProjectsControllerTests
 {
+    [Theory]
+    [InlineData(ProjectStatus.OnHold)]
+    [InlineData(ProjectStatus.Completed)]
+    public async Task Create_LockedStatusWithTeam_DoesNotStageProject(ProjectStatus status)
+    {
+        using var context = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+            .UseNpgsql("Host=localhost;Database=unused_guard_test;Username=unused").Options);
+        var dto = ValidProject();
+        dto.Status = status;
+        dto.EmployeeIds = [1];
+        var service = new ProjectService(new StackFlow.Infrastructure.Projects.EfProjectStore(context));
+        var result = await service.CreateAsync(dto);
+        Assert.Equal(ProjectSaveOutcome.TeamLocked, result.Outcome);
+        Assert.Empty(context.ChangeTracker.Entries());
+    }
+
+    [Theory]
+    [InlineData(ProjectSaveOutcome.EmployeeNotFound, 404)]
+    [InlineData(ProjectSaveOutcome.InactiveEmployee, 409)]
+    [InlineData(ProjectSaveOutcome.TeamLocked, 409)]
+    public async Task Create_InvalidTeam_ReturnsExpectedFailure(ProjectSaveOutcome outcome, int statusCode)
+    {
+        var controller = new ProjectsController(new FakeProjectService { CreateOutcome = outcome });
+        var result = await controller.Create(ValidProject());
+        Assert.Equal(statusCode, Assert.IsAssignableFrom<ObjectResult>(result.Result).StatusCode);
+    }
+
     [Fact]
     public async Task Create_ValidProject_Returns201Created()
     {
@@ -44,19 +73,21 @@ public class ProjectsControllerTests
             result => result.MemberNames.Contains(nameof(SaveProjectDto.CompletedOn)));
     }
 
-    private static SaveProjectDto ValidProject() => new()
+    private static CreateProjectDto ValidProject() => new()
     {
         Name = "StackFlow", StartDate = new DateOnly(2026, 9, 17), Status = ProjectStatus.Active
     };
 
     private sealed class FakeProjectService : IProjectService
     {
+        public ProjectSaveOutcome CreateOutcome { get; init; } = ProjectSaveOutcome.Saved;
         private readonly List<ProjectDto> projects = [];
         private readonly HashSet<(int, int)> assignments = [];
         public Task<IReadOnlyList<ProjectDto>> GetAllAsync(ProjectStatus? status) => Task.FromResult<IReadOnlyList<ProjectDto>>(projects);
         public Task<ProjectDto?> GetByIdAsync(int id) => Task.FromResult(projects.FirstOrDefault(p => p.Id == id));
-        public Task<ProjectSaveResult> CreateAsync(SaveProjectDto dto)
+        public Task<ProjectSaveResult> CreateAsync(CreateProjectDto dto)
         {
+            if (CreateOutcome != ProjectSaveOutcome.Saved) return Task.FromResult(new ProjectSaveResult(CreateOutcome));
             var project = new ProjectDto { Id = projects.Count + 1, Name = dto.Name, StartDate = dto.StartDate!.Value, Status = dto.Status.ToString() };
             projects.Add(project); return Task.FromResult(new ProjectSaveResult(ProjectSaveOutcome.Saved, project));
         }

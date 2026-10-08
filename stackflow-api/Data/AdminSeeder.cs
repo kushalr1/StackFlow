@@ -35,7 +35,12 @@ public static class AdminSeeder
 
         if (admin is null)
         {
-            admin = new AdminUser { Email = email };
+            admin = new AdminUser
+            {
+                Email = email,
+                Role = UserRoles.Admin,
+                IsActive = true
+            };
             admin.PasswordHash = passwordHasher.HashPassword(admin, password);
             dbContext.AdminUsers.Add(admin);
         }
@@ -45,6 +50,56 @@ public static class AdminSeeder
             password) == PasswordVerificationResult.Failed)
         {
             admin.PasswordHash = passwordHasher.HashPassword(admin, password);
+        }
+
+
+        var employeeEmail = configuration["EmployeeSeed:Email"]?.Trim().ToLowerInvariant();
+        var employeePassword = configuration["EmployeeSeed:Password"];
+
+        if (!string.IsNullOrWhiteSpace(employeeEmail) &&
+            !string.IsNullOrWhiteSpace(employeePassword))
+        {
+            var employee = await dbContext.Employees.SingleOrDefaultAsync(
+                existingEmployee => existingEmployee.Email.ToLower() == employeeEmail);
+
+            if (employee is null)
+            {
+                throw new InvalidOperationException(
+                    $"Employee seed account could not find employee '{employeeEmail}'.");
+            }
+
+            var employeeAccount = await dbContext.AdminUsers.SingleOrDefaultAsync(
+                account => account.Email == employeeEmail);
+
+            if (employeeAccount is null)
+            {
+                employeeAccount = new AdminUser
+                {
+                    Email = employeeEmail,
+                    Role = UserRoles.Employee,
+                    EmployeeId = employee.Id,
+                    IsActive = true
+                };
+                employeeAccount.PasswordHash = passwordHasher.HashPassword(
+                    employeeAccount,
+                    employeePassword);
+                dbContext.AdminUsers.Add(employeeAccount);
+            }
+            else
+            {
+                employeeAccount.Role = UserRoles.Employee;
+                employeeAccount.EmployeeId = employee.Id;
+
+                if (passwordHasher.VerifyHashedPassword(
+                    employeeAccount,
+                    employeeAccount.PasswordHash,
+                    employeePassword) == PasswordVerificationResult.Failed)
+                {
+                    employeeAccount.PasswordHash = passwordHasher.HashPassword(
+                        employeeAccount,
+                        employeePassword);
+                }
+            }
         }
 
         await dbContext.SaveChangesAsync();

@@ -3,6 +3,19 @@
   gap: 1.5rem;
 }
 
+.account-form { display: grid; gap: 10px; max-width: 460px; margin-top: 20px; }
+.account-form input { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; font: inherit; }
+.account-form button { justify-self: start; border: none; cursor: pointer; }
+.account-form button:disabled { opacity: .6; cursor: wait; }
+.account-error { color: #b91c1c; }
+.access-actions { margin: 16px 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.access-actions p { flex-basis: 100%; margin: 0; }
+.access-actions button { cursor: pointer; }
+.password-field { position: relative; }
+.password-field input { padding-right: 48px; }
+.account-form .password-toggle { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; background: transparent; color: #475569; border-radius: 6px; }
+.password-toggle:focus-visible { outline: 2px solid #2563eb; }
+
 .page-heading {
   display: flex;
   align-items: flex-end;

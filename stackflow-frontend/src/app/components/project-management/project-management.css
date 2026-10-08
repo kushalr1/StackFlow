@@ -18,6 +18,9 @@ input, select, textarea { box-sizing: border-box; width: 100%; border: 1px solid
 textarea { resize: vertical; }
 .form-grid small { color: #b91c1c; }
 .form-actions { display: flex; justify-content: flex-end; gap: 0.7rem; margin-top: 1rem; }
+.form-actions { flex-wrap: wrap; align-items: flex-end; }
+.create-team { flex: 1 0 100%; max-width: 100%; padding-bottom: 0.75rem; }
+.create-team app-dropdown { max-width: 420px; }
 .feedback { border-radius: 8px; padding: 0.75rem; }
 .error { background: #fef2f2; color: #b91c1c; }
 .success { background: #dcfce7; color: #166534; }

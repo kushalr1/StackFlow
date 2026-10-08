@@ -31,18 +31,22 @@ describe('AuthService', () => {
     service.login({ email: 'admin@stackflow.local', password: 'password' }).subscribe();
     const request = httpTesting.expectOne('/api/auth/login');
     expect(request.request.method).toBe('POST');
-    request.flush({ token, expiresAt: new Date(Date.now() + 3600000).toISOString(), email: 'admin@stackflow.local' });
+    request.flush({ token, expiresAt: new Date(Date.now() + 3600000).toISOString(), email: 'admin@stackflow.local', role: 'Admin', employeeId: null });
 
     expect(service.isAuthenticated()).toBe(true);
     expect(service.getToken()).toBe(token);
   });
 
   it('should clear authentication state on logout', () => {
-    sessionStorage.setItem('stackflow_admin_token', 'token');
+    sessionStorage.setItem('stackflow_token', 'token');
+    sessionStorage.setItem('stackflow_role', 'Employee');
+    sessionStorage.setItem('stackflow_employee_id', '7');
 
     service.logout();
 
     expect(service.isAuthenticated()).toBe(false);
-    expect(sessionStorage.getItem('stackflow_admin_token')).toBeNull();
+    expect(sessionStorage.getItem('stackflow_token')).toBeNull();
+    expect(sessionStorage.getItem('stackflow_role')).toBeNull();
+    expect(sessionStorage.getItem('stackflow_employee_id')).toBeNull();
   });
 });
