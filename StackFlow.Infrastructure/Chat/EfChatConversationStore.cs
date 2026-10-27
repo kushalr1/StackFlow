@@ -18,8 +18,20 @@ public class EfChatConversationStore(AppDbContext db) : IChatConversationStore
 
         var conversation = new ChatConversation { AccountId = accountId };
         db.Add(conversation);
-        await db.SaveChangesAsync();
-        return conversation;
+        try
+        {
+            await db.SaveChangesAsync();
+            return conversation;
+        }
+        catch (DbUpdateException)
+        {
+            // Two concurrent requests from the same account both saw no existing row and both
+            // tried to insert one; the unique index on AccountId lets exactly one win. Detach our
+            // losing attempt and return the row the other request actually committed.
+            db.Entry(conversation).State = EntityState.Detached;
+            return await db.ChatConversations
+                .FirstAsync(existingConversation => existingConversation.AccountId == accountId);
+        }
     }
 
     public async Task<ChatMessage> AddMessageAsync(int conversationId, string role, string content)
@@ -46,6 +58,16 @@ public class EfChatConversationStore(AppDbContext db) : IChatConversationStore
             .ToListAsync();
 
         mostRecentFirst.Reverse();
+
+        // Messages alternate user/assistant, but history is read after the new user message is
+        // appended and before its reply exists, so the stored sequence can have an odd length —
+        // trimming to `take` can then land the window's first element on an assistant turn with
+        // no preceding user turn, which is invalid multi-turn history for Gemini. Drop it.
+        if (mostRecentFirst.Count > 0 && mostRecentFirst[0].Role != "user")
+        {
+            mostRecentFirst.RemoveAt(0);
+        }
+
         return mostRecentFirst;
     }
 

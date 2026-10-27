@@ -211,9 +211,16 @@ app.UseExceptionHandler(errorApp =>
 
 app.Use(async (context, next) =>
 {
-    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
-    context.Response.Headers["X-Frame-Options"] = "DENY";
-    context.Response.Headers["Referrer-Policy"] = "no-referrer";
+    // OnStarting runs immediately before headers are actually sent — after the exception
+    // handler's Response.Clear() on an unhandled exception, not before it — so these headers
+    // survive even a 500 from UseExceptionHandler, unlike setting them directly here.
+    context.Response.OnStarting(() =>
+    {
+        context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+        context.Response.Headers["X-Frame-Options"] = "DENY";
+        context.Response.Headers["Referrer-Policy"] = "no-referrer";
+        return Task.CompletedTask;
+    });
     await next();
 });
 

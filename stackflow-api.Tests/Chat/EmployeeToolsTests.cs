@@ -94,7 +94,7 @@ public class EmployeeToolsTests
 
         await tool.ExecuteAsync(ContextFor(7), "{}");
 
-        var today = DateTime.UtcNow;
+        var today = DateTime.Today;
         Assert.Equal(7, fake.RequestedEmployeeId);
         Assert.Equal(today.Year, fake.RequestedYear);
         Assert.Equal(today.Month, fake.RequestedMonth);

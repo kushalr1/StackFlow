@@ -107,7 +107,9 @@ public class GetMyAttendanceSummaryTool(IEmployeeAttendanceService attendanceSer
         }
 
         var arguments = ChatToolArguments.Parse(argumentsJson);
-        var today = DateTime.UtcNow;
+        // Local time, matching AttendanceService/DashboardService's existing "today" convention
+        // (DateTime.Today) — UtcNow would disagree with the rest of the app for part of every day.
+        var today = DateTime.Today;
         var year = arguments.GetInt("year") ?? today.Year;
         var month = arguments.GetInt("month") ?? today.Month;
 

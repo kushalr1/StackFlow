@@ -208,6 +208,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             .WithMany()
             .HasForeignKey(conversation => conversation.AccountId)
             .OnDelete(DeleteBehavior.Cascade);
+        // Enforces "one ongoing conversation per account" at the data layer, not just in
+        // EfChatConversationStore's check-then-insert logic, which alone can't be made atomic
+        // against two concurrent requests from the same account.
+        chatConversation.HasIndex(conversation => conversation.AccountId).IsUnique();
 
         var chatMessage = modelBuilder.Entity<ChatMessage>();
         chatMessage.ToTable("ChatMessages");

@@ -96,7 +96,7 @@ public class AdminToolsTests
 
         await tool.ExecuteAsync(AdminContext(), "{}");
 
-        Assert.Equal(DateOnly.FromDateTime(DateTime.UtcNow), fake.RequestedDate);
+        Assert.Equal(DateOnly.FromDateTime(DateTime.Today), fake.RequestedDate);
     }
 
     [Fact]

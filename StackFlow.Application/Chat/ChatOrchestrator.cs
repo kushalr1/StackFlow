@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using stackflow_api.Models;
 using StackFlow.Application.Chat.Tools;
 
 namespace stackflow_api.Services;
@@ -5,7 +7,8 @@ namespace stackflow_api.Services;
 public class ChatOrchestrator(
     IEnumerable<IChatTool> tools,
     IChatModelClient modelClient,
-    IChatConversationStore store) : IChatOrchestrator
+    IChatConversationStore store,
+    ILogger<ChatOrchestrator> logger) : IChatOrchestrator
 {
     private const int MaxToolRoundTrips = 3;
     private const int HistoryMessageLimit = 20;
@@ -53,8 +56,10 @@ public class ChatOrchestrator(
                 {
                     resultJson = await tool.ExecuteAsync(context, toolCall.ArgumentsJson);
                 }
-                catch (Exception)
+                catch (Exception exception)
                 {
+                    logger.LogError(exception, "Chat tool {ToolName} failed for account {AccountId}",
+                        tool.Name, context.AccountId);
                     resultJson = """{"error":"The tool failed to produce a result."}""";
                 }
 
@@ -81,14 +86,24 @@ public class ChatOrchestrator(
     private static bool MatchesRole(ChatRole toolRole, string callerRole) =>
         toolRole switch
         {
-            ChatRole.Employee => callerRole == "Employee",
-            ChatRole.Admin => callerRole == "Admin",
+            ChatRole.Employee => callerRole == UserRoles.Employee,
+            ChatRole.Admin => callerRole == UserRoles.Admin,
             _ => false
         };
 
     private static int? TryExtractTargetEmployeeId(ChatCallContext context, IChatTool tool, string argumentsJson)
     {
-        var arguments = ChatToolArguments.Parse(argumentsJson);
-        return arguments.GetInt("employeeId") ?? (tool.AllowedRole == ChatRole.Employee ? context.EmployeeId : null);
+        // Defensive: argumentsJson always comes from GeminiChatModelClient's own JsonNode
+        // round-trip today (always well-formed), but this must never be the thing that turns a
+        // successful tool execution into an unhandled exception for the whole request.
+        try
+        {
+            var arguments = ChatToolArguments.Parse(argumentsJson);
+            return arguments.GetInt("employeeId") ?? (tool.AllowedRole == ChatRole.Employee ? context.EmployeeId : null);
+        }
+        catch (Exception)
+        {
+            return tool.AllowedRole == ChatRole.Employee ? context.EmployeeId : null;
+        }
     }
 }

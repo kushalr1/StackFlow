@@ -72,6 +72,30 @@ public class EfChatConversationStoreTests
     }
 
     [Fact]
+    public async Task ListMessagesAsync_NeverStartsTheWindowOnAnAssistantTurn()
+    {
+        // Messages alternate user/assistant, but the orchestrator reads history right after
+        // appending the new user message and before the assistant reply exists — so at read
+        // time the stored sequence has an odd length. Taking the most recent N from an odd-length
+        // alternating sequence can land the window's first element on an assistant/"model" turn,
+        // which is an invalid multi-turn history to hand to Gemini (no preceding user turn).
+        await using var db = NewDb();
+        var store = new EfChatConversationStore(db);
+        var conversation = await store.GetOrCreateActiveAsync(accountId: 1);
+
+        for (var i = 0; i < 10; i++)
+        {
+            await store.AddMessageAsync(conversation.Id, "user", $"question {i}");
+            await store.AddMessageAsync(conversation.Id, "assistant", $"answer {i}");
+        }
+        await store.AddMessageAsync(conversation.Id, "user", "the newest question, no reply yet");
+
+        var messages = await store.ListMessagesAsync(conversation.Id, take: 20);
+
+        Assert.Equal("user", messages[0].Role);
+    }
+
+    [Fact]
     public async Task LogToolInvocationAsync_PersistsToolNameAndTarget()
     {
         await using var db = NewDb();

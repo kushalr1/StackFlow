@@ -33,4 +33,7 @@ internal static class ChatToolArguments
         value.ValueKind == JsonValueKind.Number
             ? value.GetInt32()
             : null;
+
+    public static TEnum? GetEnum<TEnum>(this JsonElement element, string name) where TEnum : struct =>
+        Enum.TryParse<TEnum>(element.GetString(name), ignoreCase: true, out var parsed) ? parsed : null;
 }

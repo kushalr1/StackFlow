@@ -58,6 +58,22 @@ public class GeminiChatModelClientTests
     }
 
     [Fact]
+    public async Task SendAsync_ThrowsChatModelUnavailable_WhenApiKeyIsNotConfigured()
+    {
+        // The constructor must NOT throw here — this class is DI-activated outside any
+        // try/catch the orchestrator runs, so a constructor-time throw would surface as a raw
+        // 500 instead of the orchestrator's intended "assistant unavailable" degradation.
+        var handler = new StubHandler(HttpStatusCode.OK, TextReplyResponse);
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://generativelanguage.googleapis.com/") };
+        var configurationWithNoGeminiSection = new ConfigurationBuilder().Build();
+
+        var client = new GeminiChatModelClient(httpClient, configurationWithNoGeminiSection);
+
+        await Assert.ThrowsAsync<ChatModelUnavailableException>(() =>
+            client.SendAsync([new ChatMessageDto("user", "Hi")], []));
+    }
+
+    [Fact]
     public async Task SendAsync_ParsesFunctionCall_AndCapturesProviderState()
     {
         var (client, handler) = Build(HttpStatusCode.OK, FunctionCallResponse);
