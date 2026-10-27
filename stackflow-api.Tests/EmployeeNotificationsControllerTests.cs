@@ -41,7 +41,12 @@ public class EmployeeNotificationsControllerTests
         Assert.Equal("Employee", ((AuthorizeAttribute)attribute).Roles);
     }
 
-    private sealed class User(int? id) : ICurrentUserService { public int? EmployeeId => id; }
+    private sealed class User(int? id) : ICurrentUserService
+    {
+        public int? EmployeeId => id;
+        public int? AccountId => id;
+        public string? Role => "Employee";
+    }
     private sealed class FakeNotifications : IEmployeeNotificationService
     {
         public int EmployeeId { get; private set; }
