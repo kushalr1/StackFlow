@@ -28,6 +28,8 @@ public class EmployeeProjectsControllerTests
     private sealed class FakeUser(int? id) : ICurrentUserService
     {
         public int? EmployeeId => id;
+        public int? AccountId => id;
+        public string? Role => "Employee";
     }
 
     private sealed class FakeService : IEmployeeProjectService

@@ -65,6 +65,8 @@ public class EmployeeAttendanceControllerTests
     private sealed class FakeCurrentUser(int? employeeId) : ICurrentUserService
     {
         public int? EmployeeId { get; } = employeeId;
+        public int? AccountId => EmployeeId;
+        public string? Role => "Employee";
     }
 
     private sealed class FakeEmployeeAttendanceService : IEmployeeAttendanceService
