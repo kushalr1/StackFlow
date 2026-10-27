@@ -1,8 +1,11 @@
 using System.Text;
 using System.Security.Claims;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using stackflow_api.Data;
@@ -106,6 +109,41 @@ builder.Services.AddScoped<IPersonalTaskService, PersonalTaskService>();
 builder.Services.AddScoped<IPersonalTaskStore, EfPersonalTaskStore>();
 builder.Services.AddScoped<IEmployeeAccountService, EmployeeAccountService>();
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsync(
+            """{"message":"Too many requests. Please try again later."}""", token);
+    };
+
+    var loginPermitLimit = builder.Configuration.GetValue("RateLimiting:Login:PermitLimit", 5);
+    var loginWindowSeconds = builder.Configuration.GetValue("RateLimiting:Login:WindowSeconds", 60);
+    options.AddPolicy("login", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = loginPermitLimit,
+            Window = TimeSpan.FromSeconds(loginWindowSeconds),
+            QueueLimit = 0
+        }));
+
+    var chatPermitLimit = builder.Configuration.GetValue("RateLimiting:Chat:PermitLimit", 10);
+    var chatWindowSeconds = builder.Configuration.GetValue("RateLimiting:Chat:WindowSeconds", 60);
+    options.AddPolicy("chat", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        // Partitioned by the authenticated account, not by IP: multiple employees can share an
+        // office IP/NAT, and an IP-based limit would wrongly throttle a whole office.
+        partitionKey: httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anonymous",
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = chatPermitLimit,
+            Window = TimeSpan.FromSeconds(chatWindowSeconds),
+            QueueLimit = 0
+        }));
+});
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(AngularFrontendPolicy, policy =>
@@ -126,9 +164,45 @@ builder.Services.AddOpenApi();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+
+// Outermost, so it catches any unhandled exception from everything downstream. Never leaks
+// stack traces, exception messages, or other internals to the client in any environment —
+// the real exception is logged server-side instead.
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var feature = context.Features.Get<IExceptionHandlerFeature>();
+        if (feature?.Error is { } error)
+        {
+            context.RequestServices.GetRequiredService<ILogger<Program>>()
+                .LogError(error, "Unhandled exception processing {Method} {Path}",
+                    context.Request.Method, context.Request.Path);
+        }
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsync(
+            """{"message":"An unexpected error occurred. Please try again later."}""");
+    });
+});
+
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["Referrer-Policy"] = "no-referrer";
+    await next();
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+}
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
 }
 
 app.UseHttpsRedirection();
@@ -137,9 +211,12 @@ app.UseCors(AngularFrontendPolicy);
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 
 await AdminSeeder.SeedAsync(app.Services, app.Configuration, app.Environment);
 
 app.Run();
+
+public partial class Program { }
