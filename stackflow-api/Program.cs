@@ -20,6 +20,8 @@ using StackFlow.Infrastructure.Projects;
 using StackFlow.Infrastructure.Dashboard;
 using StackFlow.Infrastructure.Profiles;
 using StackFlow.Infrastructure.Accounts;
+using StackFlow.Infrastructure.Chat;
+using StackFlow.Application.Chat.Tools;
 using stackflow_api.Security;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -108,6 +110,26 @@ builder.Services.AddScoped<IEmployeeNotificationService, EmployeeNotificationSer
 builder.Services.AddScoped<IPersonalTaskService, PersonalTaskService>();
 builder.Services.AddScoped<IPersonalTaskStore, EfPersonalTaskStore>();
 builder.Services.AddScoped<IEmployeeAccountService, EmployeeAccountService>();
+
+builder.Services.AddScoped<IChatConversationStore, EfChatConversationStore>();
+builder.Services.AddScoped<IChatOrchestrator, ChatOrchestrator>();
+builder.Services.AddScoped<IChatTool, GetMyProfileTool>();
+builder.Services.AddScoped<IChatTool, GetMyLeaveSummaryTool>();
+builder.Services.AddScoped<IChatTool, GetMyProjectsTool>();
+builder.Services.AddScoped<IChatTool, GetMyAttendanceSummaryTool>();
+builder.Services.AddScoped<IChatTool, GetMyTasksTool>();
+builder.Services.AddScoped<IChatTool, GetMyNotificationsTool>();
+builder.Services.AddScoped<IChatTool, FindEmployeeTool>();
+builder.Services.AddScoped<IChatTool, GetDepartmentSummaryTool>();
+builder.Services.AddScoped<IChatTool, GetLeaveRequestsTool>();
+builder.Services.AddScoped<IChatTool, GetProjectStatusTool>();
+builder.Services.AddScoped<IChatTool, GetAttendanceTodayTool>();
+builder.Services.AddScoped<IChatTool, GetDashboardStatsTool>();
+builder.Services.AddHttpClient<IChatModelClient, GeminiChatModelClient>(client =>
+{
+    client.BaseAddress = new Uri("https://generativelanguage.googleapis.com/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 
 builder.Services.AddRateLimiter(options =>
 {
