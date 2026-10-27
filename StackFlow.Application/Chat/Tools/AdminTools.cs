@@ -61,9 +61,7 @@ public class GetLeaveRequestsTool(ILeaveRequestService leaveRequestService) : IC
     public async Task<string> ExecuteAsync(ChatCallContext context, string argumentsJson)
     {
         var arguments = ChatToolArguments.Parse(argumentsJson);
-        var status = Enum.TryParse<LeaveStatus>(arguments.GetString("status"), ignoreCase: true, out var parsedStatus)
-            ? parsedStatus
-            : (LeaveStatus?)null;
+        var status = arguments.GetEnum<LeaveStatus>("status");
         var employeeId = arguments.GetInt("employeeId");
 
         var requests = await leaveRequestService.GetAllAsync(employeeId, status, leaveType: null);
@@ -90,9 +88,7 @@ public class GetProjectStatusTool(IProjectService projectService) : IChatTool
     public async Task<string> ExecuteAsync(ChatCallContext context, string argumentsJson)
     {
         var arguments = ChatToolArguments.Parse(argumentsJson);
-        var status = Enum.TryParse<ProjectStatus>(arguments.GetString("status"), ignoreCase: true, out var parsedStatus)
-            ? parsedStatus
-            : (ProjectStatus?)null;
+        var status = arguments.GetEnum<ProjectStatus>("status");
 
         var projects = await projectService.GetAllAsync(status);
         return JsonSerializer.Serialize(projects.Select(project => new
@@ -117,7 +113,9 @@ public class GetAttendanceTodayTool(IAttendanceService attendanceService) : ICha
 
     public async Task<string> ExecuteAsync(ChatCallContext context, string argumentsJson)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        // Local time, matching AttendanceService/DashboardService's existing "today" convention —
+        // UtcNow would disagree with the rest of the app's dashboard for part of every day.
+        var today = DateOnly.FromDateTime(DateTime.Today);
         var records = await attendanceService.GetAllAsync(today, employeeId: null, status: null);
         return JsonSerializer.Serialize(records.Select(record => new { record.EmployeeName, record.Status }));
     }

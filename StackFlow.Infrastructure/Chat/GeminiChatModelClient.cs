@@ -18,14 +18,19 @@ namespace StackFlow.Infrastructure.Chat;
 public class GeminiChatModelClient : IChatModelClient
 {
     private readonly HttpClient _httpClient;
-    private readonly string _apiKey;
+
+    // Read lazily at request time, not in the constructor: this class is DI-activated (via the
+    // typed HttpClient factory) as part of constructing ChatOrchestrator/ChatController, outside
+    // any try/catch the orchestrator runs — a constructor throw would surface as a raw 500
+    // instead of the orchestrator's intended "assistant unavailable" degradation, and untested
+    // environments missing the key would never see that intended behavior.
+    private readonly IConfiguration _configuration;
     private readonly string _model;
 
     public GeminiChatModelClient(HttpClient httpClient, IConfiguration configuration)
     {
         _httpClient = httpClient;
-        _apiKey = configuration["Gemini:ApiKey"]
-            ?? throw new InvalidOperationException("Gemini API key was not configured.");
+        _configuration = configuration;
         _model = configuration["Gemini:Model"] ?? "gemini-3.5-flash-lite";
     }
 
@@ -106,6 +111,9 @@ public class GeminiChatModelClient : IChatModelClient
     private async Task<ChatModelResponse> SendRequestAsync(
         JsonArray contents, JsonArray tools, CancellationToken cancellationToken)
     {
+        var apiKey = _configuration["Gemini:ApiKey"]
+            ?? throw new ChatModelUnavailableException("The AI assistant is not configured.");
+
         var requestBody = new JsonObject { ["contents"] = contents.DeepClone() };
         if (tools.Count > 0)
         {
@@ -117,7 +125,7 @@ public class GeminiChatModelClient : IChatModelClient
         {
             Content = new StringContent(requestBody.ToJsonString(), Encoding.UTF8, "application/json")
         };
-        request.Headers.Add("x-goog-api-key", _apiKey);
+        request.Headers.Add("x-goog-api-key", apiKey);
 
         HttpResponseMessage response;
         try

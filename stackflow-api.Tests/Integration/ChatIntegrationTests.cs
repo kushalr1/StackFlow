@@ -91,5 +91,25 @@ public class ChatIntegrationTests
         Assert.DoesNotContain("Only I should see this", body);
     }
 
+    [Fact]
+    public async Task PostChatMessage_WithNoGeminiApiKeyConfigured_DegradesGracefully_NotA500()
+    {
+        // No ExtraServices override here — this exercises the REAL GeminiChatModelClient through
+        // the real ChatController, with no Gemini:ApiKey in config (IntegrationTestFactory never
+        // sets one), closing the gap where every other chat integration test substitutes a fake
+        // model client and so never proves this failure path degrades gracefully.
+        using var factory = new IntegrationTestFactory();
+        await factory.SeedAccountAsync("admin-no-key@example.test", "a-valid-password-123");
+        var client = factory.CreateClient();
+        var token = await factory.LoginAsync(client, "admin-no-key@example.test", "a-valid-password-123");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.PostAsJsonAsync("/api/chat/messages", new { message = "Hello" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonReplyShape>();
+        Assert.Contains("unavailable", body!.Reply, StringComparison.OrdinalIgnoreCase);
+    }
+
     private record JsonReplyShape(string Reply);
 }

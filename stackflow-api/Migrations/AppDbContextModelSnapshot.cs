@@ -112,7 +112,8 @@ namespace stackflow_api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AccountId");
+                    b.HasIndex("AccountId")
+                        .IsUnique();
 
                     b.ToTable("ChatConversations", (string)null);
                 });
