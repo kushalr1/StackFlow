@@ -20,6 +20,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<EmployeeProject> EmployeeProjects => Set<EmployeeProject>();
     public DbSet<EmployeeNotification> EmployeeNotifications => Set<EmployeeNotification>();
+    public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+    public DbSet<ChatToolInvocation> ChatToolInvocations => Set<ChatToolInvocation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -198,5 +201,30 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             .WithMany(item => item.EmployeeProjects)
             .HasForeignKey(link => link.ProjectId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        var chatConversation = modelBuilder.Entity<ChatConversation>();
+        chatConversation.ToTable("ChatConversations");
+        chatConversation.HasOne(conversation => conversation.Account)
+            .WithMany()
+            .HasForeignKey(conversation => conversation.AccountId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        var chatMessage = modelBuilder.Entity<ChatMessage>();
+        chatMessage.ToTable("ChatMessages");
+        chatMessage.Property(message => message.Role).IsRequired().HasMaxLength(10);
+        chatMessage.HasIndex(message => new { message.ConversationId, message.CreatedAt });
+        chatMessage.HasOne(message => message.Conversation)
+            .WithMany()
+            .HasForeignKey(message => message.ConversationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        var chatToolInvocation = modelBuilder.Entity<ChatToolInvocation>();
+        chatToolInvocation.ToTable("ChatToolInvocations");
+        chatToolInvocation.Property(invocation => invocation.ToolName).IsRequired().HasMaxLength(100);
+        chatToolInvocation.HasOne(invocation => invocation.ChatMessage)
+            .WithMany()
+            .HasForeignKey(invocation => invocation.ChatMessageId)
+            .OnDelete(DeleteBehavior.Cascade);
+        // TargetEmployeeId is intentionally not configured as a foreign key (see ChatToolInvocation).
     }
 }
