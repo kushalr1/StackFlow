@@ -79,7 +79,7 @@ describe('App', () => {
     fixture.detectChanges();
     const items = fixture.nativeElement.querySelectorAll('nav > *');
 
-    expect(items).toHaveLength(6);
+    expect(items).toHaveLength(7);
     const dashboard = TestBed.inject(DashboardService);
     dashboard.pendingLeaves.set(3);
     fixture.detectChanges();
