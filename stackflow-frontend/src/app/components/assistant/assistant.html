@@ -1,0 +1,43 @@
+<section class="assistant">
+  @if (chat.messages().length === 0 && !chat.loading() && !chat.busy()) {
+    <div class="greeting">
+      <div class="orb" aria-hidden="true"></div>
+      <h1>{{ greeting() }}, {{ displayName() }}!</h1>
+      <p>What can I help you with?</p>
+      <div class="suggestions">
+        @for (suggestion of suggestions(); track suggestion) {
+          <button type="button" class="suggestion-chip" (click)="ask(suggestion)">{{ suggestion }}</button>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="messages" role="log" aria-live="polite">
+      @for (message of chat.messages(); track $index) {
+        <div class="message" [class.user]="message.role === 'user'" [class.assistant]="message.role === 'assistant'">
+          <p>{{ message.content }}</p>
+        </div>
+      }
+      @if (chat.busy()) {
+        <div class="message assistant busy" aria-label="The assistant is thinking">
+          <p>Thinking…</p>
+        </div>
+      }
+    </div>
+  }
+
+  @if (chat.error()) {
+    <p class="error" role="alert">{{ chat.error() }}</p>
+  }
+
+  <form class="composer" (ngSubmit)="send()">
+    <input
+      type="text"
+      name="draft"
+      [(ngModel)]="draft"
+      placeholder="Ask me anything…"
+      [disabled]="chat.busy()"
+      autocomplete="off"
+    />
+    <button type="submit" [disabled]="chat.busy() || !draft.trim()">Send</button>
+  </form>
+</section>
