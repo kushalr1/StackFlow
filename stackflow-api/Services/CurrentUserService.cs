@@ -13,4 +13,15 @@ public class CurrentUserService(IHttpContextAccessor httpContextAccessor)
             return int.TryParse(value, out var employeeId) ? employeeId : null;
         }
     }
+
+    public int? AccountId
+    {
+        get
+        {
+            var value = httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.TryParse(value, out var accountId) ? accountId : null;
+        }
+    }
+
+    public string? Role => httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.Role);
 }
