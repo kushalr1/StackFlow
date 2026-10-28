@@ -26,6 +26,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/chat/messages').flush([]);
     await vi.advanceTimersByTimeAsync(0);
     http.expectOne('/api/dashboard/stats').flush({ pendingLeaveRequests: 2 });
     expect(TestBed.inject(DashboardService).pendingLeaves()).toBe(2);
@@ -79,7 +80,9 @@ describe('App', () => {
     fixture.detectChanges();
     const items = fixture.nativeElement.querySelectorAll('nav > *');
 
-    expect(items).toHaveLength(7);
+    expect(items).toHaveLength(6);
+    expect(fixture.nativeElement.querySelector('a[href="/assistant"]')).toBeNull();
+    TestBed.inject(HttpTestingController).match('/api/chat/messages').forEach((request) => request.flush([]));
     const dashboard = TestBed.inject(DashboardService);
     dashboard.pendingLeaves.set(3);
     fixture.detectChanges();

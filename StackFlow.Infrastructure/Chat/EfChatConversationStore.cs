@@ -34,13 +34,14 @@ public class EfChatConversationStore(AppDbContext db) : IChatConversationStore
         }
     }
 
-    public async Task<ChatMessage> AddMessageAsync(int conversationId, string role, string content)
+    public async Task<ChatMessage> AddMessageAsync(int conversationId, string role, string content, string? listsJson = null)
     {
         var message = new ChatMessage
         {
             ConversationId = conversationId,
             Role = role,
-            Content = content
+            Content = content,
+            ListsJson = listsJson
         };
         db.Add(message);
         await db.SaveChangesAsync();
@@ -69,6 +70,21 @@ public class EfChatConversationStore(AppDbContext db) : IChatConversationStore
         }
 
         return mostRecentFirst;
+    }
+
+    public async Task ClearAsync(int conversationId)
+    {
+        var messages = await db.ChatMessages
+            .Where(message => message.ConversationId == conversationId)
+            .ToListAsync();
+        var messageIds = messages.Select(message => message.Id).ToList();
+        var invocations = await db.ChatToolInvocations
+            .Where(invocation => messageIds.Contains(invocation.ChatMessageId))
+            .ToListAsync();
+
+        db.ChatToolInvocations.RemoveRange(invocations);
+        db.ChatMessages.RemoveRange(messages);
+        await db.SaveChangesAsync();
     }
 
     public async Task LogToolInvocationAsync(int chatMessageId, string toolName, int? targetEmployeeId)

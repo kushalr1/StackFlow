@@ -9,6 +9,7 @@ public interface IChatModelClient
     Task<ChatModelResponse> SendAsync(
         IReadOnlyList<ChatMessageDto> history,
         IReadOnlyList<ToolDefinition> allowedTools,
+        string systemInstruction,
         CancellationToken cancellationToken = default);
 
     /// <summary>Continues the turn started by a SendAsync response that returned a ToolCall,

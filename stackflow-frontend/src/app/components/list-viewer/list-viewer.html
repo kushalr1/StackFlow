@@ -1,0 +1,67 @@
+@if (viewer.current(); as list) {
+  <div class="backdrop" (click)="onBackdropClick($event)">
+    <section class="sheet" role="dialog" aria-modal="true" [attr.aria-label]="list.title">
+      <header class="sheet-head">
+        <div class="titles">
+          <h2>{{ list.title }}</h2>
+          <p>{{ countLabel() }}@if (list.subtitle) { · {{ list.subtitle }} }</p>
+        </div>
+        <button type="button" class="close" (click)="close()">Close</button>
+      </header>
+
+      <div class="toolbar">
+        <input
+          type="search"
+          class="search"
+          placeholder="Search this list"
+          aria-label="Search this list"
+          [value]="query()"
+          (input)="query.set($any($event.target).value)"
+        />
+        <div class="downloads">
+          <span class="export-label">{{ exportLabel() }}</span>
+          <button type="button" (click)="csv()" [disabled]="visibleRows().length === 0">CSV</button>
+          <button type="button" (click)="excel()" [disabled]="visibleRows().length === 0 || exporting()">
+            {{ exporting() ? 'Preparing…' : 'Excel' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="table-scroll">
+        @if (visibleRows().length === 0) {
+          <p class="empty">No rows match "{{ query() }}".</p>
+        } @else {
+          <table>
+            <thead>
+              <tr>
+                @for (column of list.columns; track column.key) {
+                  <th scope="col" [attr.aria-sort]="ariaSort(column)">
+                    <button type="button" class="sort" (click)="sort(column)">
+                      {{ column.label }}
+                      @if (sortKey() === column.key) { <span aria-hidden="true">{{ sortDirection() === 'asc' ? '▲' : '▼' }}</span> }
+                    </button>
+                  </th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of visibleRows(); track $index) {
+                <tr>
+                  @for (column of list.columns; track column.key) {
+                    <td [attr.data-label]="column.label">
+                      @if (column.type === 'status') {
+                        <span class="badge" [attr.data-tone]="tone(row[column.key]?.text ?? '')">{{ row[column.key]?.text }}</span>
+                      } @else {
+                        <span class="cell">{{ row[column.key]?.text }}</span>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    </section>
+  </div>
+}

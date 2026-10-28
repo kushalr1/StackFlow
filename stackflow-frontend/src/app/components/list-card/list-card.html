@@ -1,0 +1,25 @@
+<button type="button" class="card" (click)="open()" [attr.aria-label]="'Open ' + list().title">
+  <span class="card-head">
+    <strong class="card-title">{{ list().title }}</strong>
+    <span class="card-count">{{ countLabel() }}</span>
+  </span>
+  @if (list().subtitle) {
+    <span class="card-subtitle">{{ list().subtitle }}</span>
+  }
+  <span class="preview">
+    @for (row of previewRows(); track $index) {
+      <span class="preview-row">
+        <span class="preview-main">
+          <span class="preview-primary">{{ row[primary().key]?.text }}</span>
+          @if (secondary(); as column) {
+            <span class="preview-secondary">{{ row[column.key]?.text }}</span>
+          }
+        </span>
+        @if (status(); as column) {
+          <span class="badge" [attr.data-tone]="tone(row[column.key]?.text ?? '')">{{ row[column.key]?.text }}</span>
+        }
+      </span>
+    }
+  </span>
+  <span class="view-all">View all →</span>
+</button>
