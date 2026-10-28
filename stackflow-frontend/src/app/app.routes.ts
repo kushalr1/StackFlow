@@ -5,8 +5,7 @@ import { EmployeeDetails } from './components/employee-details/employee-details'
 import { EmployeeForm } from './components/employee-form/employee-form';
 import { EmployeeList } from './components/employee-list/employee-list';
 import { Login } from './components/login/login';
-import { Assistant } from './components/assistant/assistant';
-import { authGuard, guestGuard, roleGuard } from './guards/auth.guard';
+import { guestGuard, roleGuard } from './guards/auth.guard';
 import { AttendanceManagement } from './components/attendance-management/attendance-management';
 import { LeaveManagement } from './components/leave-management/leave-management';
 import { ProjectManagement } from './components/project-management/project-management';
@@ -35,6 +34,5 @@ export const routes: Routes = [
   { path: 'employee/leaves', component: EmployeeLeaves, canActivate: [roleGuard('Employee')] },
   { path: 'employee/projects', component: EmployeeProjects, canActivate: [roleGuard('Employee')] },
   { path: 'employee/tasks', component: EmployeeTasks, canActivate: [roleGuard('Employee')] },
-  { path: 'assistant', component: Assistant, canActivate: [authGuard] },
   { path: '**', redirectTo: 'dashboard' },
 ];

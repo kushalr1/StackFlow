@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
 using stackflow_api.Models;
+using stackflow_api.Services;
+using StackFlow.Application.Chat;
 using StackFlow.Application.Chat.Tools;
 
 namespace stackflow_api.Services;
@@ -8,19 +10,40 @@ public class ChatOrchestrator(
     IEnumerable<IChatTool> tools,
     IChatModelClient modelClient,
     IChatConversationStore store,
+    ChatActionCollector actions,
     ILogger<ChatOrchestrator> logger) : IChatOrchestrator
 {
-    private const int MaxToolRoundTrips = 3;
+    private const int MaxToolRoundTrips = 6;
     private const int HistoryMessageLimit = 20;
+    private const string ToolBudgetExhaustedJson =
+        """{"error":"Tool limit reached. Answer the user now with the results already gathered."}""";
+    private const string UnclearReply =
+        "I couldn't get a clear answer for that. Try a name, a department, or a question like \"How many employees are there?\".";
 
-    public async Task<string> HandleAsync(
+    public async Task<ChatReply> HandleAsync(
         ChatCallContext context, string userMessage, CancellationToken cancellationToken = default)
     {
+        actions.Clear();
         var allowedTools = tools.Where(tool => MatchesRole(tool.AllowedRole, context.Role)).ToList();
         var allowedToolsByName = allowedTools.ToDictionary(tool => tool.Name);
+        var systemInstruction = ChatInstructions.For(
+            context.Role == UserRoles.Admin ? ChatRole.Admin : ChatRole.Employee, ChatClock.Today());
 
         var conversation = await store.GetOrCreateActiveAsync(context.AccountId);
         await store.AddMessageAsync(conversation.Id, "user", userMessage);
+
+        var role = ChatLookup.RoleOf(context);
+        if (VagueQuestions.IsVague(userMessage) || VagueQuestions.IsUnscopedSalaryQuestion(userMessage, role))
+        {
+            var question = VagueQuestions.IsUnscopedSalaryQuestion(userMessage, role)
+                ? "Whose salary would you like to know, or the whole company?"
+                : VagueQuestions.Question;
+            await store.AddMessageAsync(conversation.Id, "assistant", question);
+            actions.SetSuggestions(VagueQuestions.IsUnscopedSalaryQuestion(userMessage, role)
+                ? VagueQuestions.SalaryOptions
+                : VagueQuestions.OptionsFor(role));
+            return new ChatReply(question, [], actions.Suggestions.ToList());
+        }
 
         var history = (await store.ListMessagesAsync(conversation.Id, HistoryMessageLimit))
             .Select(message => new ChatMessageDto(message.Role, message.Content))
@@ -34,7 +57,7 @@ public class ChatOrchestrator(
         string replyText;
         try
         {
-            var response = await modelClient.SendAsync(history, toolDefinitions, cancellationToken);
+            var response = await modelClient.SendAsync(history, toolDefinitions, systemInstruction, cancellationToken);
             var round = 0;
             while (response.ToolCall is not null && round < MaxToolRoundTrips)
             {
@@ -67,25 +90,36 @@ public class ChatOrchestrator(
                 response = await modelClient.ContinueWithToolResultAsync(response, resultJson, cancellationToken);
             }
 
-            replyText = response.ReplyText ?? "I wasn't able to find an answer to that.";
+            // The model still wants another tool after the budget: close that call and ask for a plain answer.
+            if (response.ToolCall is not null)
+            {
+                response = await modelClient.ContinueWithToolResultAsync(
+                    response, ToolBudgetExhaustedJson, cancellationToken);
+            }
+
+            replyText = response.ReplyText ?? UnclearReply;
         }
         catch (ChatModelUnavailableException)
         {
+            // A half-finished turn must not leave buttons or chips that belong to an answer that never arrived.
+            actions.Clear();
             replyText = "The AI assistant is unavailable right now. Please try again shortly.";
         }
 
-        var assistantMessage = await store.AddMessageAsync(conversation.Id, "assistant", replyText);
+        var listsJson = actions.Lists.Count > 0 ? ChatJson.Serialize(actions.Lists) : null;
+        var assistantMessage = await store.AddMessageAsync(conversation.Id, "assistant", replyText, listsJson);
         foreach (var (toolName, targetEmployeeId) in invocationsToLog)
         {
             await store.LogToolInvocationAsync(assistantMessage.Id, toolName, targetEmployeeId);
         }
 
-        return replyText;
+        return new ChatReply(replyText, actions.Actions.ToList(), actions.Suggestions.ToList(), actions.Lists.ToList());
     }
 
     private static bool MatchesRole(ChatRole toolRole, string callerRole) =>
         toolRole switch
         {
+            ChatRole.Any => callerRole is UserRoles.Employee or UserRoles.Admin,
             ChatRole.Employee => callerRole == UserRoles.Employee,
             ChatRole.Admin => callerRole == UserRoles.Admin,
             _ => false

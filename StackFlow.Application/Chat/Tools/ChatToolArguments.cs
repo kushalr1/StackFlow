@@ -34,6 +34,24 @@ internal static class ChatToolArguments
             ? value.GetInt32()
             : null;
 
+    public static IReadOnlyList<string> GetStringArray(this JsonElement element, string name)
+    {
+        if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty(name, out var value) ||
+            value.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        return value.EnumerateArray()
+            .Where(item => item.ValueKind == JsonValueKind.String)
+            .Select(item => item.GetString()!)
+            .ToList();
+    }
+
+    /// <summary>Reads a "YYYY-MM-DD" date. Anything else is treated as absent.</summary>
+    public static DateOnly? GetDate(this JsonElement element, string name) =>
+        DateOnly.TryParseExact(element.GetString(name), "yyyy-MM-dd", out var date) ? date : null;
+
     public static TEnum? GetEnum<TEnum>(this JsonElement element, string name) where TEnum : struct =>
         Enum.TryParse<TEnum>(element.GetString(name), ignoreCase: true, out var parsed) ? parsed : null;
 }

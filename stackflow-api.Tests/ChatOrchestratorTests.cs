@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using stackflow_api.Models;
 using stackflow_api.Services;
+using StackFlow.Application.Chat;
 
 namespace stackflow_api.Tests;
 
@@ -15,7 +16,7 @@ public class ChatOrchestratorTests
         var employeeTool = new StubTool("get_my_leave_summary", ChatRole.Employee);
         var adminTool = new StubTool("find_employee", ChatRole.Admin);
         var model = new FakeChatModelClient([new ChatModelResponse("All done.", null)]);
-        var orchestrator = new ChatOrchestrator([employeeTool, adminTool], model, new FakeChatConversationStore(), NullLogger<ChatOrchestrator>.Instance);
+        var orchestrator = new ChatOrchestrator([employeeTool, adminTool], model, new FakeChatConversationStore(), new ChatActionCollector(), NullLogger<ChatOrchestrator>.Instance);
 
         await orchestrator.HandleAsync(EmployeeContext(), "What's my leave balance?");
 
@@ -30,7 +31,7 @@ public class ChatOrchestratorTests
         var employeeTool = new StubTool("get_my_leave_summary", ChatRole.Employee);
         var adminTool = new StubTool("find_employee", ChatRole.Admin);
         var model = new FakeChatModelClient([new ChatModelResponse("All done.", null)]);
-        var orchestrator = new ChatOrchestrator([employeeTool, adminTool], model, new FakeChatConversationStore(), NullLogger<ChatOrchestrator>.Instance);
+        var orchestrator = new ChatOrchestrator([employeeTool, adminTool], model, new FakeChatConversationStore(), new ChatActionCollector(), NullLogger<ChatOrchestrator>.Instance);
 
         await orchestrator.HandleAsync(AdminContext(), "Find Priya");
 
@@ -49,9 +50,9 @@ public class ChatOrchestratorTests
             new ChatModelResponse(null, new ToolCallRequest("find_employee", "{}"), "state-1"),
             new ChatModelResponse("Sorry, I can't do that.", null)
         ]);
-        var orchestrator = new ChatOrchestrator([adminOnlyTool], model, new FakeChatConversationStore(), NullLogger<ChatOrchestrator>.Instance);
+        var orchestrator = new ChatOrchestrator([adminOnlyTool], model, new FakeChatConversationStore(), new ChatActionCollector(), NullLogger<ChatOrchestrator>.Instance);
 
-        var reply = await orchestrator.HandleAsync(EmployeeContext(), "Find Priya's salary");
+        var reply = (await orchestrator.HandleAsync(EmployeeContext(), "Find Priya's salary")).Text;
 
         Assert.False(adminOnlyTool.WasExecuted);
         Assert.Equal("Sorry, I can't do that.", reply);
@@ -66,9 +67,9 @@ public class ChatOrchestratorTests
             new ChatModelResponse("You have an approved leave.", null)
         ]);
         var store = new FakeChatConversationStore();
-        var orchestrator = new ChatOrchestrator([tool], model, store, NullLogger<ChatOrchestrator>.Instance);
+        var orchestrator = new ChatOrchestrator([tool], model, store, new ChatActionCollector(), NullLogger<ChatOrchestrator>.Instance);
 
-        var reply = await orchestrator.HandleAsync(EmployeeContext(), "What's my leave status?");
+        var reply = (await orchestrator.HandleAsync(EmployeeContext(), "What's my leave status?")).Text;
 
         Assert.True(tool.WasExecuted);
         Assert.Equal("You have an approved leave.", reply);
@@ -83,16 +84,16 @@ public class ChatOrchestratorTests
     {
         var model = new FakeChatModelClient([new ChatModelResponse("Hi there!", null)]);
         var store = new FakeChatConversationStore();
-        var orchestrator = new ChatOrchestrator([], model, store, NullLogger<ChatOrchestrator>.Instance);
+        var orchestrator = new ChatOrchestrator([], model, store, new ChatActionCollector(), NullLogger<ChatOrchestrator>.Instance);
 
-        await orchestrator.HandleAsync(EmployeeContext(), "Hello");
+        await orchestrator.HandleAsync(EmployeeContext(), "How many active employees are there?");
 
-        Assert.Contains(store.Messages, m => m.Role == "user" && m.Content == "Hello");
+        Assert.Contains(store.Messages, m => m.Role == "user" && m.Content == "How many active employees are there?");
         Assert.Contains(store.Messages, m => m.Role == "assistant" && m.Content == "Hi there!");
     }
 
     [Fact]
-    public async Task HandleAsync_StopsAfterThreeToolRoundTrips_AndDoesNotLoopForever()
+    public async Task HandleAsync_StopsAfterSixToolRoundTrips_AndDoesNotLoopForever()
     {
         var tool = new StubTool("get_my_leave_summary", ChatRole.Employee);
         // A model that keeps asking for another tool call forever, to prove the cap actually stops it.
@@ -100,21 +101,40 @@ public class ChatOrchestratorTests
             .Select(_ => new ChatModelResponse(null, new ToolCallRequest("get_my_leave_summary", "{}"), "state"))
             .ToList();
         var model = new FakeChatModelClient(responses);
-        var orchestrator = new ChatOrchestrator([tool], model, new FakeChatConversationStore(), NullLogger<ChatOrchestrator>.Instance);
+        var orchestrator = new ChatOrchestrator([tool], model, new FakeChatConversationStore(), new ChatActionCollector(), NullLogger<ChatOrchestrator>.Instance);
 
-        var reply = await orchestrator.HandleAsync(EmployeeContext(), "Loop please");
+        var reply = (await orchestrator.HandleAsync(EmployeeContext(), "Loop please")).Text;
 
-        Assert.Equal(3, tool.ExecutionCount);
+        Assert.Equal(6, tool.ExecutionCount);
         Assert.False(string.IsNullOrEmpty(reply));
+    }
+
+    [Fact]
+    public async Task HandleAsync_AsksForAPlainAnswer_WhenToolBudgetRunsOut()
+    {
+        var tool = new StubTool("get_my_leave_summary", ChatRole.Employee);
+        // Six tool rounds, then the model wants a seventh. The orchestrator closes that call and
+        // the model answers in text instead of the user getting a generic failure message.
+        var responses = Enumerable.Range(0, 6)
+            .Select(_ => new ChatModelResponse(null, new ToolCallRequest("get_my_leave_summary", "{}"), "state"))
+            .Append(new ChatModelResponse(null, new ToolCallRequest("get_my_leave_summary", "{}"), "state"))
+            .Append(new ChatModelResponse("You have 2 approved leaves.", null))
+            .ToList();
+        var model = new FakeChatModelClient(responses);
+        var orchestrator = new ChatOrchestrator([tool], model, new FakeChatConversationStore(), new ChatActionCollector(), NullLogger<ChatOrchestrator>.Instance);
+
+        var reply = (await orchestrator.HandleAsync(EmployeeContext(), "My leaves?")).Text;
+
+        Assert.Equal("You have 2 approved leaves.", reply);
     }
 
     [Fact]
     public async Task HandleAsync_DegradesToASafeMessage_WhenTheModelIsUnavailable()
     {
         var model = new FakeChatModelClient([]) { ThrowUnavailable = true };
-        var orchestrator = new ChatOrchestrator([], model, new FakeChatConversationStore(), NullLogger<ChatOrchestrator>.Instance);
+        var orchestrator = new ChatOrchestrator([], model, new FakeChatConversationStore(), new ChatActionCollector(), NullLogger<ChatOrchestrator>.Instance);
 
-        var reply = await orchestrator.HandleAsync(EmployeeContext(), "Hello");
+        var reply = (await orchestrator.HandleAsync(EmployeeContext(), "How many active employees are there?")).Text;
 
         Assert.Contains("unavailable", reply, StringComparison.OrdinalIgnoreCase);
     }
@@ -145,7 +165,7 @@ public class ChatOrchestratorTests
 
         public Task<ChatModelResponse> SendAsync(
             IReadOnlyList<ChatMessageDto> history, IReadOnlyList<ToolDefinition> allowedTools,
-            CancellationToken cancellationToken = default)
+            string systemInstruction, CancellationToken cancellationToken = default)
         {
             ToolsOfferedOnFirstCall ??= allowedTools;
             return NextAsync();
@@ -176,7 +196,7 @@ public class ChatOrchestratorTests
         public Task<ChatConversation> GetOrCreateActiveAsync(int accountId) =>
             Task.FromResult(new ChatConversation { Id = 1, AccountId = accountId });
 
-        public Task<ChatMessage> AddMessageAsync(int conversationId, string role, string content)
+        public Task<ChatMessage> AddMessageAsync(int conversationId, string role, string content, string? listsJson = null)
         {
             var message = new ChatMessage { Id = _nextMessageId++, ConversationId = conversationId, Role = role, Content = content };
             Messages.Add(message);
@@ -191,5 +211,7 @@ public class ChatOrchestratorTests
             LoggedInvocations.Add(new ChatToolInvocation { ChatMessageId = chatMessageId, ToolName = toolName, TargetEmployeeId = targetEmployeeId });
             return Task.CompletedTask;
         }
+
+        public Task ClearAsync(int conversationId) => throw new NotSupportedException("Not used by this test.");
     }
 }

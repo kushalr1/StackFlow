@@ -18,7 +18,6 @@
           </a>
           <a routerLink="/departments" routerLinkActive="active">Departments</a>
           <a routerLink="/projects" routerLinkActive="active">Projects</a>
-          <a routerLink="/assistant" routerLinkActive="active">AI Assistant</a>
         </nav>
       } @else {
         <nav aria-label="Employee navigation">
@@ -28,7 +27,6 @@
           <a routerLink="/employee/leaves" routerLinkActive="active">My Leaves</a>
           <a routerLink="/employee/projects" routerLinkActive="active">My Projects</a>
           <a routerLink="/employee/tasks" routerLinkActive="active">My To-do</a>
-          <a routerLink="/assistant" routerLinkActive="active">AI Assistant</a>
         </nav>
       }
 
@@ -41,11 +39,11 @@
     <main class="page-content">
       @if (authService.role() === 'Employee') {
         <div class="notification-toolbar">
+          <div class="notification-anchor" #notificationAnchor>
           <button class="notification-bell" type="button" aria-label="Notifications" title="Notifications" [attr.aria-expanded]="notificationsOpen()" aria-controls="employee-notifications" (click)="notificationsOpen.set(!notificationsOpen())">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
             @if ((notifications.inbox()?.unreadCount ?? 0) > 0) { <span class="pending-badge" [attr.aria-label]="notifications.inbox()?.unreadCount + ' unread notifications'">{{ notifications.inbox()?.unreadCount }}</span> }
           </button>
-        </div>
         @if (notificationsOpen()) {
           <section class="notification-panel" id="employee-notifications" aria-label="Project assignment notifications">
             <header><strong>Project assignments</strong><button type="button" aria-label="Close notifications" (click)="notificationsOpen.set(false)">Close</button></header>
@@ -56,10 +54,16 @@
             } @empty { @if (notifications.inbox()) { <p>No assignment notifications yet.</p> } }
           </section>
         }
+          </div>
+        </div>
       }
       <router-outlet />
     </main>
+
   </div>
+
+  <app-chat-widget />
+  <app-list-viewer />
 } @else {
   <router-outlet />
 }

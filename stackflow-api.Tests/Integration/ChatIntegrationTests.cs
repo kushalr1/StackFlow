@@ -14,7 +14,7 @@ public class ChatIntegrationTests
     {
         public Task<ChatModelResponse> SendAsync(
             IReadOnlyList<ChatMessageDto> history, IReadOnlyList<ToolDefinition> allowedTools,
-            CancellationToken cancellationToken = default) =>
+            string systemInstruction, CancellationToken cancellationToken = default) =>
             Task.FromResult(new ChatModelResponse("There are 9 active employees.", null));
 
         public Task<ChatModelResponse> ContinueWithToolResultAsync(
@@ -104,7 +104,7 @@ public class ChatIntegrationTests
         var token = await factory.LoginAsync(client, "admin-no-key@example.test", "a-valid-password-123");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var response = await client.PostAsJsonAsync("/api/chat/messages", new { message = "Hello" });
+        var response = await client.PostAsJsonAsync("/api/chat/messages", new { message = "How many active employees are there?" });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<JsonReplyShape>();

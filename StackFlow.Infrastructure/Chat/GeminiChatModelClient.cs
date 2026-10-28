@@ -37,11 +37,12 @@ public class GeminiChatModelClient : IChatModelClient
     public async Task<ChatModelResponse> SendAsync(
         IReadOnlyList<ChatMessageDto> history,
         IReadOnlyList<ToolDefinition> allowedTools,
+        string systemInstruction,
         CancellationToken cancellationToken = default)
     {
         var contents = new JsonArray(history.Select(BuildTextTurn).ToArray());
         var tools = BuildToolsArray(allowedTools);
-        return await SendRequestAsync(contents, tools, cancellationToken);
+        return await SendRequestAsync(contents, tools, BuildSystemInstruction(systemInstruction), cancellationToken);
     }
 
     public async Task<ChatModelResponse> ContinueWithToolResultAsync(
@@ -58,6 +59,7 @@ public class GeminiChatModelClient : IChatModelClient
         var state = JsonNode.Parse(previousResponse.ProviderStateJson)!.AsObject();
         var contents = state["contents"]!.AsArray();
         var tools = state["tools"]!.AsArray();
+        var systemInstruction = state["systemInstruction"]!.AsObject();
 
         JsonNode? resultValue;
         try
@@ -82,8 +84,13 @@ public class GeminiChatModelClient : IChatModelClient
             })
         });
 
-        return await SendRequestAsync(contents, tools, cancellationToken);
+        return await SendRequestAsync(contents, tools, systemInstruction, cancellationToken);
     }
+
+    private static JsonObject BuildSystemInstruction(string text) => new()
+    {
+        ["parts"] = new JsonArray(new JsonObject { ["text"] = text })
+    };
 
     private static JsonObject BuildTextTurn(ChatMessageDto message) => new()
     {
@@ -109,12 +116,16 @@ public class GeminiChatModelClient : IChatModelClient
     }
 
     private async Task<ChatModelResponse> SendRequestAsync(
-        JsonArray contents, JsonArray tools, CancellationToken cancellationToken)
+        JsonArray contents, JsonArray tools, JsonObject systemInstruction, CancellationToken cancellationToken)
     {
         var apiKey = _configuration["Gemini:ApiKey"]
             ?? throw new ChatModelUnavailableException("The AI assistant is not configured.");
 
-        var requestBody = new JsonObject { ["contents"] = contents.DeepClone() };
+        var requestBody = new JsonObject
+        {
+            ["systemInstruction"] = systemInstruction.DeepClone(),
+            ["contents"] = contents.DeepClone()
+        };
         if (tools.Count > 0)
         {
             requestBody["tools"] = tools.DeepClone();
@@ -154,10 +165,11 @@ public class GeminiChatModelClient : IChatModelClient
             throw new ChatModelUnavailableException("The AI assistant returned an unreadable response.", exception);
         }
 
-        return ParseResponse(root, contents, tools);
+        return ParseResponse(root, contents, tools, systemInstruction);
     }
 
-    private static ChatModelResponse ParseResponse(JsonNode root, JsonArray contents, JsonArray tools)
+    private static ChatModelResponse ParseResponse(
+        JsonNode root, JsonArray contents, JsonArray tools, JsonObject systemInstruction)
     {
         var parts = root["candidates"]?[0]?["content"]?["parts"]?.AsArray();
         if (parts is null)
@@ -180,7 +192,8 @@ public class GeminiChatModelClient : IChatModelClient
                 var nextState = new JsonObject
                 {
                     ["contents"] = new JsonArray([.. contents.Select(n => n!.DeepClone()), modelTurn]),
-                    ["tools"] = tools.DeepClone()
+                    ["tools"] = tools.DeepClone(),
+                    ["systemInstruction"] = systemInstruction.DeepClone()
                 };
 
                 return new ChatModelResponse(

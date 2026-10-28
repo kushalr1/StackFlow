@@ -9,5 +9,7 @@ public class ChatMessage
     /// <summary>"user" or "assistant".</summary>
     public string Role { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
+    /// <summary>JSON array of list payloads shown as cards with this reply. Null when the reply has no lists.</summary>
+    public string? ListsJson { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

@@ -1,14 +1,18 @@
-import { Component, effect, inject } from '@angular/core';
+import { Component, effect, ElementRef, HostListener, inject, viewChild } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from './services/auth.service';
 import { DashboardService } from './services/dashboard.service';
+import { ChatService } from './services/chat.service';
+import { ChatWidget } from './components/chat-widget/chat-widget';
+import { ListViewer } from './components/list-viewer/list-viewer';
+import { ListViewerService } from './services/list-viewer.service';
 import { EmployeeNotification, EmployeeNotificationService } from './services/employee-notification.service';
 import { signal } from '@angular/core';
 import { catchError, EMPTY, exhaustMap, switchMap, timer } from 'rxjs';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, ChatWidget, ListViewer],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -16,10 +20,20 @@ export class App {
   protected readonly authService = inject(AuthService);
   protected readonly dashboardService = inject(DashboardService);
   protected readonly notifications = inject(EmployeeNotificationService);
+  private readonly chat = inject(ChatService);
+  private readonly listViewer = inject(ListViewerService);
   protected readonly notificationsOpen = signal(false);
+  private readonly notificationAnchor = viewChild<ElementRef<HTMLElement>>('notificationAnchor');
   private readonly router = inject(Router);
 
   constructor() {
+    effect(() => {
+      // Chat history belongs to the signed-in account; drop it as soon as the session ends.
+      if (!this.authService.isAuthenticated()) {
+        this.chat.reset();
+        this.listViewer.close();
+      }
+    });
     effect(onCleanup => {
       if (!this.authService.isAuthenticated() || this.authService.role() !== 'Employee') {
         this.notifications.inbox.set(null);
@@ -55,7 +69,21 @@ export class App {
     });
   }
 
+  @HostListener('document:click', ['$event.target'])
+  protected closeNotificationsOnOutsideClick(target: EventTarget | null): void {
+    const anchor = this.notificationAnchor()?.nativeElement;
+    if (this.notificationsOpen() && anchor && target instanceof Node && !anchor.contains(target)) {
+      this.notificationsOpen.set(false);
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  protected closeNotificationsOnEscape(): void {
+    this.notificationsOpen.set(false);
+  }
+
   protected logout(): void {
+    this.chat.endSession();
     this.authService.logout();
     void this.router.navigate(['/login'], { replaceUrl: true });
   }
