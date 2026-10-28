@@ -45,7 +45,7 @@ describe('ChatService', () => {
     const messages = service.messages();
     expect(messages).toEqual([
       { role: 'user', content: 'What is my leave balance?', createdAt: expect.any(String) },
-      { role: 'assistant', content: 'You have 5 days remaining.', createdAt: expect.any(String) },
+      { role: 'assistant', content: 'You have 5 days remaining.', createdAt: expect.any(String), actions: [], lists: [] },
     ]);
     expect(service.busy()).toBe(false);
   });

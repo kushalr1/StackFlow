@@ -83,10 +83,10 @@ public class ChatControllerTests
         public string Reply { get; set; } = "ok";
         public ChatCallContext? ReceivedContext { get; private set; }
 
-        public Task<string> HandleAsync(ChatCallContext context, string userMessage, CancellationToken cancellationToken = default)
+        public Task<ChatReply> HandleAsync(ChatCallContext context, string userMessage, CancellationToken cancellationToken = default)
         {
             ReceivedContext = context;
-            return Task.FromResult(Reply);
+            return Task.FromResult(new ChatReply(Reply, [], []));
         }
     }
 
@@ -95,11 +95,14 @@ public class ChatControllerTests
         public Dictionary<int, List<ChatMessage>> MessagesByConversation { get; } = [];
 
         public Task<ChatConversation> GetOrCreateActiveAsync(int accountId) => Task.FromResult(new ChatConversation { Id = 1, AccountId = accountId });
-        public Task<ChatMessage> AddMessageAsync(int conversationId, string role, string content) =>
+        public Task<ChatMessage> AddMessageAsync(int conversationId, string role, string content, string? listsJson = null) =>
             throw new NotSupportedException("Not used by this test.");
         public Task<List<ChatMessage>> ListMessagesAsync(int conversationId, int take) =>
             Task.FromResult(MessagesByConversation.TryGetValue(conversationId, out var messages) ? messages : []);
         public Task LogToolInvocationAsync(int chatMessageId, string toolName, int? targetEmployeeId) =>
+            throw new NotSupportedException("Not used by this test.");
+
+        public Task ClearAsync(int conversationId) =>
             throw new NotSupportedException("Not used by this test.");
     }
 }

@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (.NET tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/packages.lock.json') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore stackflow-api.Tests/stackflow-api.Tests.csproj
+
+      - name: Build
+        run: dotnet build stackflow-api.Tests/stackflow-api.Tests.csproj --no-restore --configuration Release
+
+      - name: Test with coverage
+        # Integration tests run against the in-memory EF provider and a scripted chat model.
+        # No PostgreSQL service and no LLM key are needed.
+        run: >
+          dotnet test stackflow-api.Tests/stackflow-api.Tests.csproj
+          --no-build --configuration Release
+          --logger "trx;LogFileName=backend.trx"
+          --results-directory TestResults
+          --collect:"XPlat Code Coverage"
+
+      - name: Upload backend test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: TestResults/**/*.trx
+
+      - name: Upload backend coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: TestResults/**/coverage.cobertura.xml
+
+  frontend:
+    name: Frontend (Angular tests and build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: stackflow-frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: stackflow-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The project has no lint target configured; add one here when it does.
+
+      - name: Unit tests with coverage
+        # Vitest runs in jsdom, so no browser binary is needed.
+        run: npx ng test --watch=false --coverage --coverage-reporters=text --coverage-reporters=lcov
+
+      - name: Build
+        run: npx ng build --configuration production
+
+      - name: Upload frontend coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: stackflow-frontend/coverage/

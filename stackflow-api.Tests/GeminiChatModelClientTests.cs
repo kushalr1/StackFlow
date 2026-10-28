@@ -70,7 +70,7 @@ public class GeminiChatModelClientTests
         var client = new GeminiChatModelClient(httpClient, configurationWithNoGeminiSection);
 
         await Assert.ThrowsAsync<ChatModelUnavailableException>(() =>
-            client.SendAsync([new ChatMessageDto("user", "Hi")], []));
+            client.SendAsync([new ChatMessageDto("user", "Hi")], [], "You are a test assistant."));
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public class GeminiChatModelClientTests
 
         var response = await client.SendAsync(
             [new ChatMessageDto("user", "What is the weather in Paris?")],
-            [new ToolDefinition("get_weather", "Get weather", """{"type":"object","properties":{}}""")]);
+            [new ToolDefinition("get_weather", "Get weather", """{"type":"object","properties":{}}""")], "You are a test assistant.");
 
         Assert.Null(response.ReplyText);
         Assert.NotNull(response.ToolCall);
@@ -97,7 +97,7 @@ public class GeminiChatModelClientTests
 
         var response = await client.SendAsync(
             [new ChatMessageDto("user", "Hello")],
-            []);
+            [], "You are a test assistant.");
 
         Assert.Null(response.ToolCall);
         Assert.Contains("22", response.ReplyText);
@@ -110,7 +110,7 @@ public class GeminiChatModelClientTests
 
         await client.SendAsync(
             [new ChatMessageDto("user", "Hi"), new ChatMessageDto("assistant", "Hello!")],
-            []);
+            [], "You are a test assistant.");
 
         Assert.Contains("\"role\":\"model\"", handler.LastRequestBody);
         Assert.DoesNotContain("\"role\":\"assistant\"", handler.LastRequestBody);
@@ -122,7 +122,7 @@ public class GeminiChatModelClientTests
         var (client, handler) = Build(HttpStatusCode.OK, FunctionCallResponse);
         var toolCallResponse = await client.SendAsync(
             [new ChatMessageDto("user", "What is the weather in Paris?")],
-            [new ToolDefinition("get_weather", "Get weather", """{"type":"object","properties":{}}""")]);
+            [new ToolDefinition("get_weather", "Get weather", """{"type":"object","properties":{}}""")], "You are a test assistant.");
 
         handler.SetResponse(HttpStatusCode.OK, TextReplyResponse);
         var finalResponse = await client.ContinueWithToolResultAsync(toolCallResponse, """{"result":"22C, sunny"}""");
@@ -139,7 +139,7 @@ public class GeminiChatModelClientTests
         var (client, _) = Build(HttpStatusCode.ServiceUnavailable, """{"error":{"message":"overloaded"}}""");
 
         await Assert.ThrowsAsync<ChatModelUnavailableException>(() =>
-            client.SendAsync([new ChatMessageDto("user", "Hi")], []));
+            client.SendAsync([new ChatMessageDto("user", "Hi")], [], "You are a test assistant."));
     }
 
     [Fact]
@@ -148,7 +148,7 @@ public class GeminiChatModelClientTests
         var (client, _) = Build(HttpStatusCode.OK, "{not valid json");
 
         await Assert.ThrowsAsync<ChatModelUnavailableException>(() =>
-            client.SendAsync([new ChatMessageDto("user", "Hi")], []));
+            client.SendAsync([new ChatMessageDto("user", "Hi")], [], "You are a test assistant."));
     }
 
     private class StubHandler(HttpStatusCode status, string body) : HttpMessageHandler

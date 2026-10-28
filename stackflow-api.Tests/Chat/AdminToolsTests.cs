@@ -1,6 +1,7 @@
 using stackflow_api.DTOs;
 using stackflow_api.Models;
 using stackflow_api.Services;
+using StackFlow.Application.Chat;
 using StackFlow.Application.Chat.Tools;
 
 namespace stackflow_api.Tests.Chat;
@@ -50,7 +51,7 @@ public class AdminToolsTests
         {
             Requests = [new LeaveRequestDto { Id = 1, EmployeeName = "Priya Sharma", Status = "Pending" }]
         };
-        var tool = new GetLeaveRequestsTool(fake);
+        var tool = new GetLeaveRequestsTool(fake, new StackFlow.Application.Chat.ChatActionCollector());
 
         var result = await tool.ExecuteAsync(AdminContext(), """{"status": "Pending", "employeeId": 7}""");
 
@@ -64,7 +65,7 @@ public class AdminToolsTests
     public async Task GetLeaveRequestsTool_WorksWithNoFilters()
     {
         var fake = new FakeLeaveRequestService { Requests = [] };
-        var tool = new GetLeaveRequestsTool(fake);
+        var tool = new GetLeaveRequestsTool(fake, new StackFlow.Application.Chat.ChatActionCollector());
 
         await tool.ExecuteAsync(AdminContext(), "{}");
 
@@ -89,14 +90,14 @@ public class AdminToolsTests
     }
 
     [Fact]
-    public async Task GetAttendanceTodayTool_PassesTodaysDate()
+    public async Task GetAttendanceTool_DefaultsToTodayInCompanyTimeZone()
     {
         var fake = new FakeAttendanceService { Records = [] };
-        var tool = new GetAttendanceTodayTool(fake);
+        var tool = new GetAttendanceTool(fake, new StackFlow.Application.Chat.ChatActionCollector());
 
         await tool.ExecuteAsync(AdminContext(), "{}");
 
-        Assert.Equal(DateOnly.FromDateTime(DateTime.Today), fake.RequestedDate);
+        Assert.Equal(ChatClock.Today(), fake.RequestedDate);
     }
 
     [Fact]
